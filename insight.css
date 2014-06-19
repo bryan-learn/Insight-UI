@@ -1,0 +1,55 @@
+html { height: 100% }
+body { 
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	/*background-color: #99C9D9;*/
+	background-color: #CCDDFF;
+	font-color: #996023
+}
+#container {
+	height: 100%;
+	width: 100%;
+	padding-left: 10px;
+	padding-bottom: 10px;
+}
+#hearder { height: 10% }
+#map-canvas { 
+	float: left; 
+	height: 90%; 
+	width: 60%; 
+	border: 2px solid; 
+	border-radius: 25px;
+	position: relative;
+	margin: 5px
+}
+#info-canvas { 
+	float: left;
+	height: 90%;
+	width: 35%;
+	border: 2px solid;
+	border-radius: 10px;
+	margin: 5px;
+	background-color: #F0F0FF;
+	position: relative;
+	/*text-align: center*/
+}
+#con-field {
+	position: relative;
+	height: 70%;
+	background-color: #F0F0FF
+}
+#filter-field {
+	position: relative;
+	background-color: #F0F0FF
+}
+#reportButton {
+	position: absolute;
+	margin-left: auto;
+	margin-right: auto
+}
+#legend {
+	padding:3px;
+	background-color: #F0F0FF
+}
