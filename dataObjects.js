@@ -2,32 +2,32 @@
 
 /* Tuple: 5-tuple object that identifies a flow. 
  * Overloaded constructor:
- * 	Tuple(srcIP, srcPort, destIP, destPort, protocol)
+ * 	Tuple(SrcIP, SrcPort, DestIP, DestPort)
  *	Tuple(jso)
  */
-function Tuple(srcIP, srcPort, destIP, destPort, protocol){
-	this.srcIP = srcIP;
-	this.srcPort = srcPort;
-	this.destIP = destIP;
-	this.destPort = destPort;
-	this.protocol = protocol;
+function Tuple(SrcIP, SrcPort, DestIP, DestPort){
+	this.SrcIP = SrcIP;
+	this.SrcPort = SrcPort;
+	this.DestIP = DestIP;
+	this.DestPort = DestPort;
+	//this.protocol = protocol;
 	this.getID = function (){
 		// Turn each value into string then concatenate
-		plainStr = srcIP.toString()+srcPort.toString()+destIP.toString()+destPort.toString()+protocol.toString();
+		plainStr = SrcIP.toString()+SrcPort.toString()+DestIP.toString()+DestPort.toString();
 
 		return plainStr;
 	};
 }
 
 function Tuple(jso){
-	this.srcIP = jso.srcIP;
-	this.srcPort = jso.srcPort;
-	this.destIP = jso.destIP;
-	this.destPort = jso.destPort;
-	this.protocol = jso.protocol;
+	this.SrcIP = jso.SrcIP;
+	this.SrcPort = jso.SrcPort;
+	this.DestIP = jso.DestIP;
+	this.DestPort = jso.DestPort;
+	//this.protocol = jso.protocol;
 	this.getID = function (){
 		// Turn each value into string then concatenate
-		plainStr = this.srcIP.toString()+this.srcPort.toString()+this.destIP.toString()+this.destPort.toString()+this.protocol.toString();
+		plainStr = this.SrcIP.toString()+this.SrcPort.toString()+this.DestIP.toString()+this.DestPort.toString();
 
 		return plainStr;
 	};
@@ -46,10 +46,10 @@ function Flow(tuple, priority, dupAcks, oops, cwnd, winScale){
 	this.cwnd = cwnd;
 	this.winScale = winScale;
 	this.srcLatLng = function (){
-		return geoIP.lookup(this.tuple.srcIP);
+		return geoIP.lookup(this.tuple.SrcIP);
 	}
 	this.destLatLng = function (){
-		return geoIP.lookup(this.tuple.destIP);
+		return geoIP.lookup(this.tuple.DestIP);
 	};
 	this.getID = function (){
 		// Call tuple's getID function
@@ -65,10 +65,10 @@ function Flow(jso){
 	this.cwnd = jso.cwnd;
 	this.winScale = jso.winScale;
 	this.srcLatLng = function (){
-		return geoIP.lookup(this.tuple.srcIP);
+		return geoIP.lookup(this.tuple.SrcIP);
 	}
 	this.destLatLng = function (){
-		return geoIP.lookup(this.tuple.destIP);
+		return geoIP.lookup(this.tuple.DestIP);
 	};
 	this.getID = function (){
 		// Call tuple's getID function
@@ -129,7 +129,7 @@ var geoIP = {
 	lookup: function (ip) {
 		var res = null;
 		if( this.table[ip] == undefined ){ // if ip address is not in table
-			var t = JSON.parse(getRequest("http://freegeoip.net/json/"+ip));
+			var t = JSON.parse(getRequest(/*"http://freegeoip.net/json/"+ip*/));
 			if( t != null){
 				res = new Location(t.latitude, t.longitude);
 				this.table[ip] = res;
@@ -148,9 +148,11 @@ var geoIP = {
 /* Data Processing Routines */
 
 /* Converts a propertly formated JSON string from the client to an array of Flows */
+var lastBlob;
 function jsonToFlows(strJSON){
+	lastBlob = strJSON;
 	var jso = JSON.parse(strJSON);
-	jso = jso.array;
+	jso = jso.DATA;
 
 	var flows = new Array();
 

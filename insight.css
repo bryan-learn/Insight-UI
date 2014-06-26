@@ -35,6 +35,11 @@ body {
 	position: relative;
 	/*text-align: center*/
 }
+#con-stat {
+	position: relative;
+	height: 5%;
+	background-color: #F0F0FF
+}
 #con-field {
 	position: relative;
 	height: 70%;

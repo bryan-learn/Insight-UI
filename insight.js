@@ -29,19 +29,40 @@ function initialize() {
 
 }// end map initialize
 
+window.onload = function websockInit(){
+	window.WebSocket = window.WebSocket || window.MozWebSocket;
+	UIHandle.websocket = new WebSocket('ws://127.0.0.1:9000');
+	UIHandle.websocket.onopen = function () {
+		setConnectionStatus('Connected!');
+	};
+	UIHandle.websocket.onerror = function () {
+		setConnectionStatus('Error Connecting!');
+	};
+	UIHandle.websocket.onmessage = function (message) {
+		getMessage(message.data);
+	};
+	 
+	/*$('button').click(function(e) {
+		e.preventDefault();
+		websocket.send($('input').val());
+		//websocket.send("list");
+		//$('input').val('');
+	});*/
+}
 
 /* Update Loop Functions */
-var fps = 1000/1; // Set target FPS to 1
+var fps = 1000/0.5; // Set target FPS to 0.5
 var start = Date.now();
 
 function Update(){
-	// Receive data from client
-	var newData = sendMessage(1, null);
+	// Request data from client
+	console.log(sendMessage(1, '{"command":"list"}'));
+}
 
-	if(newData != null){
-		console.log(jsonToFlows(newData));
+function getMessage(dataStr){
+	if(dataStr != null){
 		// Compare new data to old
-		processNewData(jsonToFlows(newData));
+		processNewData(jsonToFlows(dataStr));
 	}
 }
 
@@ -65,7 +86,9 @@ function recursiveAnim(){
 	animFrame(recursiveAnim);
 }
 
-
+function testGo(){
+	recursiveAnim();
+}
 
 /* UI Routines */
 
@@ -234,10 +257,11 @@ function centerMap(){
 	map.fitBounds(mapBounds());
 }
 
-function sendMessage(type, args){ 
+function sendMessage(type, arg){ 
 	switch(type){
 	case 1:		// Request Data
-		return clientSend(); // temp function call to simulate client
+		return UIHandle.websocket.send(arg);
+		//return clientSend(); // temp function call to simulate client
 		break;
 	case 2:		// Send Report
 		report();
@@ -258,6 +282,11 @@ function mapBounds(){
 function writeToInfoPanel(content){
 	var panel = document.getElementById('con-field');
 	panel.innerHTML = "<legend>Connection Details</legend>"+content;
+}
+
+function setConnectionStatus(str){
+	var panel = document.getElementById('con-stat');
+        panel.innerHTML = str;
 }
 
 /* Converts dataObject's Location object to Google API's LatLng object */

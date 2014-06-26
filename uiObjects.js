@@ -18,7 +18,8 @@ var UIHandle = {
 	},
 	removeMarker: function(id){
 		delete this.markers[id];
-	}
+	},
+	websocket: null
 
 };
 
