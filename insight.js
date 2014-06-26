@@ -34,6 +34,7 @@ window.onload = function websockInit(){
 	UIHandle.websocket = new WebSocket('ws://127.0.0.1:9000');
 	UIHandle.websocket.onopen = function () {
 		setConnectionStatus('Connected!');
+		recursiveAnim();
 	};
 	UIHandle.websocket.onerror = function () {
 		setConnectionStatus('Error Connecting!');
