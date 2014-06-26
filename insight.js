@@ -57,7 +57,8 @@ var start = Date.now();
 
 function Update(){
 	// Request data from client
-	console.log(sendMessage(1, '{"command":"list"}'));
+	//console.log(sendMessage(1, '{"command":"list"}'));
+	sendMessage(1, '{"command":"list"}');
 }
 
 function getMessage(dataStr){
@@ -85,10 +86,6 @@ function recursiveAnim(){
 	}
 	//else{ console.log(dt+' < '+fps); }
 	animFrame(recursiveAnim);
-}
-
-function testGo(){
-	recursiveAnim();
 }
 
 /* UI Routines */
@@ -162,7 +159,7 @@ function processNewData(next) {
 
 /* Creates new UI elements for the Flow passed in. */
 function createUIElems(flow){
-	console.log("Creating element, id:"+flow.getID());
+	//console.log("Creating element, id:"+flow.getID());
 	// Create marker at flow endpoint
 	var endpoint = locToGLatLng(flow.destLatLng());
 	UIHandle.markers[flow.getID()] = new google.maps.Marker({
@@ -198,7 +195,7 @@ function createUIElems(flow){
 
 /* Updates new UI elements for the Flow passed in. */
 function updateUIElems(flow){
-	console.log("Updating element, id:"+flow.getID());
+	//console.log("Updating element, id:"+flow.getID());
 
 	var endpoint = locToGLatLng(flow.destLatLng());
 
@@ -240,7 +237,7 @@ function updateUIElems(flow){
 
 /* Removes new UI elements for the Flow passed in. */
 function removeUIElems(flow){
-	console.log("Removing element, id:"+flow.getID());
+	//console.log("Removing element, id:"+flow.getID());
 
 	UIHandle.markers[flow.getID()].setMap(null); // remove from map
 	delete UIHandle.markers[flow.getID()]; // remove marker
@@ -250,7 +247,7 @@ function removeUIElems(flow){
 }
 
 function report(){
-	console.log("Report button clicked");
+	//console.log("Report button clicked");
 	UIHandle.infoWindow.close();
 }
 
