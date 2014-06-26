@@ -129,7 +129,7 @@ var geoIP = {
 	lookup: function (ip) {
 		var res = null;
 		if( this.table[ip] == undefined ){ // if ip address is not in table
-			var t = JSON.parse(getRequest(/*"http://freegeoip.net/json/"+ip*/));
+			var t = JSON.parse(getRequest("http://freegeoip.net/json/"+ip));
 			if( t != null){
 				res = new Location(t.latitude, t.longitude);
 				this.table[ip] = res;
