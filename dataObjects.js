@@ -71,6 +71,7 @@ function Flow(jso){
 		// Call tuple's getID function
 		return this.tuple.getID();
 	};
+	this.drawn = false;
 }
 
 /* Data Container: Holds all of the flow data.

@@ -43,12 +43,6 @@ window.onload = function websockInit(){
 		getMessage(message.data);
 	};
 	 
-	/*$('button').click(function(e) {
-		e.preventDefault();
-		websocket.send($('input').val());
-		//websocket.send("list");
-		//$('input').val('');
-	});*/
 }
 
 /* Update Loop Functions */
@@ -95,7 +89,7 @@ function recursiveAnim(){
  * Processes Flows appropriately according to the flow's group
  * TODO : this function could be more efficient
  */
-function processNewData(next) {
+/*function processNewData(next) {
 	var exists = new Array();	// holds flow for existing flows
 					// exists[i] = next[i].getID()
 	var news = new Array();		// holds flow for new flows
@@ -142,24 +136,45 @@ function processNewData(next) {
 
 	// remove UI elements
 	for(var i=0; i<removed.length; i++){
-		removeUIElems(removed[i]);
+		removeUIElem(removed[i]);
 		DataContainer.remove(removed[i]); // remove this flow from DataContainer
 	}//end for
 
 	// update UI elements
 	for(var i=0; i<exists.length; i++){
-		updateUIElems(exists[i]);
+		updateUIElem(exists[i]);
 	}//end for
 
 	// create UI elements
 	for(var i=0; i<news.length; i++){
 		DataContainer.add(news[i]); // add this flow to DataContainer
-		createUIElems(news[i]);
+		createUIElem(news[i]);
 	}//end for
+}*/
+/*
+ * Replaces old data set (DataContainer.list) with newFlows.
+ */
+function processNewData(newFlows){
+	// Remove old UI elements
+        for(var i=0; i<DataContainer.list.length; i++){
+                removeUIElem(DataContainer.list[i]);
+        }
+
+	// Remove old Data elements
+	delete DataContainer.list;
+	
+	// Create new Data elements
+	DataContainer.list = newFlows;
+
+	// Create new UI elements
+	for(var i=0; i<DataContainer.list.length; i++){
+		createUIElem(DataContainer.list[i], countDestIP(DataContainer.list[i].tuple.DestIP));
+	}
+
 }
 
 /* Creates new UI elements for the Flow passed in. */
-function createUIElems(flow){
+function createUIElem(flow, multi){
 	//console.log("Creating element, id:"+flow.getID());
 	// Create marker at flow endpoint
 	var endpoint = locToGLatLng(flow.latLng);
@@ -177,14 +192,14 @@ function createUIElems(flow){
 		icons: [{icon: antSym, offset: '0', repeat: '40px'}],
 		strokeColor: 'green',
 		strokeWeight: 6,
-		multiplier: countDestIP(flow.tuple.destIP),
+		multiplier: multi,
 		map: UIHandle.map,
 		zIndex: 3
 	});
 
 	// Add event listner to path
 	google.maps.event.addListener(UIHandle.paths[flow.getID()], 'click', function(event){
-	var content = "Destination IP Address: "+flow.tuple.destIP;
+	var content = "Destination IP Address: "+flow.tuple.DestIP;
 	content += "<br>Duplicate ACKs: "+flow.DupAcks;
 	content += "<br>Out of order packets: "+flow.OOPS;
 	content += "<br>Window Scale: "+flow.WinScale;
@@ -192,10 +207,12 @@ function createUIElems(flow){
 	content += "<br>Protocol: "+flow.tuple.protocol;
 	pathClickEvent(event, content);
 	});
+
+	flow.drawn = true;
 }
 
 /* Updates new UI elements for the Flow passed in. */
-function updateUIElems(flow){
+function updateUIElem(flow){
 	//console.log("Updating element, id:"+flow.getID());
 
 	var endpoint = locToGLatLng(flow.latLng);
@@ -219,14 +236,14 @@ function updateUIElems(flow){
 		icons: [{icon: antSym, offset: '0', repeat: '40px'}],
 		strokeColor: 'green',
 		strokeWeight: 6,
-		multiplier: countDestIP(flow.tuple.destIP),
+		multiplier: countDestIP(flow.tuple.DestIP),
 		map: UIHandle.map,
 		zIndex: 3
 	});
 
 	// Add event listner to path
 	google.maps.event.addListener(UIHandle.paths[flow.getID()], 'click', function(event){
-	var content = "Destination IP Address: "+flow.tuple.destIP;
+	var content = "Destination IP Address: "+flow.tuple.DestIP;
 	content += "<br>Duplicate ACKs: "+flow.DupAcks;
 	content += "<br>Out of order packets: "+flow.OOPS;
 	content += "<br>Window Scale: "+flow.WinScale;
@@ -237,7 +254,7 @@ function updateUIElems(flow){
 }
 
 /* Removes new UI elements for the Flow passed in. */
-function removeUIElems(flow){
+function removeUIElem(flow){
 	//console.log("Removing element, id:"+flow.getID());
 
 	UIHandle.markers[flow.getID()].setMap(null); // remove from map
@@ -293,12 +310,12 @@ function locToGLatLng(loc){
 	return new google.maps.LatLng(loc.lat, loc.lng);
 }
 
-/* Returns the number of flows whose destIP matches ip */
+/* Returns the number of flows drawn onto the map whose DestIP matches ip */
 function countDestIP(ip){
 	var cnt = 0;
 	for(var i=0; i<DataContainer.list.length; i++){
-		if(DataContainer.list[i] != undefined){
-			if(DataContainer.list[i].tuple.destIP == ip)
+		if(DataContainer.list[i] != undefined && DataContainer.list[i].drawn == true){
+			if(DataContainer.list[i].tuple.DestIP == ip)
 				cnt++;
 		}
 	}
