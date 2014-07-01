@@ -38,7 +38,7 @@ function Tuple(jso){
  * 	Flow(tuple, priority, DupAcks, OOPS, cwnd, WinScale)
  * 	Flow(jso)
  * */
-function Flow(tuple, priority, dupAcks, oops, cwnd, winScale){
+/*function Flow(tuple, priority, dupAcks, oops, cwnd, winScale){
 	this.tuple = tuple;
 	this.priority = priority;
 	this.dupAcks = dupAcks;
@@ -46,16 +46,18 @@ function Flow(tuple, priority, dupAcks, oops, cwnd, winScale){
 	this.cwnd = cwnd;
 	this.winScale = winScale;
 	this.srcLatLng = function (){
-		return geoIP.lookup(this.tuple.SrcIP);
+		//return geoIP.lookup(this.tuple.SrcIP);
+		return geoIP.burmuda;
 	}
 	this.destLatLng = function (){
-		return geoIP.lookup(this.tuple.DestIP);
+		//return geoIP.lookup(this.tuple.DestIP);
+		return geoIP.burmuda;
 	};
 	this.getID = function (){
 		// Call tuple's getID function
 		return this.tuple.getID();
 	};
-}
+}*/
 
 function Flow(jso){
 	this.tuple = new Tuple(jso.tuple);
@@ -64,12 +66,7 @@ function Flow(jso){
 	this.oops = jso.oops;
 	this.cwnd = jso.cwnd;
 	this.winScale = jso.winScale;
-	this.srcLatLng = function (){
-		return geoIP.lookup(this.tuple.SrcIP);
-	}
-	this.destLatLng = function (){
-		return geoIP.lookup(this.tuple.DestIP);
-	};
+	this.latLng = new Location(jso.lat, jso.long);
 	this.getID = function (){
 		// Call tuple's getID function
 		return this.tuple.getID();

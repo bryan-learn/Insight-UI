@@ -93,6 +93,7 @@ function recursiveAnim(){
 /* Compares array of Flows to old data set (DataContainer.list), sorting Flows
  * into the groups: existing, new, removed.
  * Processes Flows appropriately according to the flow's group
+ * TODO : this function could be more efficient
  */
 function processNewData(next) {
 	var exists = new Array();	// holds flow for existing flows
@@ -161,7 +162,7 @@ function processNewData(next) {
 function createUIElems(flow){
 	//console.log("Creating element, id:"+flow.getID());
 	// Create marker at flow endpoint
-	var endpoint = locToGLatLng(flow.destLatLng());
+	var endpoint = locToGLatLng(flow.latLng);
 	UIHandle.markers[flow.getID()] = new google.maps.Marker({
 		position: endpoint,
 	    	icon: nodeSym,
@@ -197,7 +198,7 @@ function createUIElems(flow){
 function updateUIElems(flow){
 	//console.log("Updating element, id:"+flow.getID());
 
-	var endpoint = locToGLatLng(flow.destLatLng());
+	var endpoint = locToGLatLng(flow.latLng);
 
 	// Create marker at flow endpoint
 	UIHandle.markers[flow.getID()].setMap(null); // remove from map
@@ -270,9 +271,9 @@ function sendMessage(type, arg){
 function mapBounds(){
 	var points = DataContainer.list;
 	var bounds = new google.maps.LatLngBounds();
-	bounds.extend(points[0].srcLatLng().toGLatLng()); // Add host latlng to bounds
+	bounds.extend(points[0].latLng.toGLatLng()); // Add host latlng to bounds
 	for (i=0; i<points.length; i++){	// Add each dest latlng to bounds
-		bounds.extend(points[i].destLatLng().toGLatLng());
+		bounds.extend(points[i].latLng.toGLatLng());
 	}
 	return bounds;
 }
