@@ -42,7 +42,10 @@ window.onload = function websockInit(){
 	UIHandle.websocket.onmessage = function (message) {
 		getMessage(message.data);
 	};
-	 
+	UIHandle.websocket.onclose = function () {
+		setConnectionStatus('Connection Lost!');
+		setTimeout(function(){websockInit()} ,5000); // Attempt to reconnect every 5 seconds
+	};	 
 }
 
 /* Update Loop Functions */
@@ -51,8 +54,7 @@ var start = Date.now();
 
 function Update(){
 	// Request data from client
-	//console.log(sendMessage(1, '{"command":"list"}'));
-	sendMessage(1, '{"command":"list"}');
+	sendMessage(1, '{"command":"exclude", "options":"9000"}');
 }
 
 function getMessage(dataStr){
@@ -76,10 +78,11 @@ function recursiveAnim(){
 	var dt = now-start;
 	if( dt >= fps ){
 		start = now;
-		Update();
+		if( UIHandle.websocket.readyState == UIHandle.websocket.OPEN ){
+			Update();
+		}
 	}
-	//else{ console.log(dt+' < '+fps); }
-	animFrame(recursiveAnim);
+		animFrame(recursiveAnim);
 }
 
 /* UI Routines */
