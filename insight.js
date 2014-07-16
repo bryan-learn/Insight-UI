@@ -4,7 +4,7 @@ var requestAnimFrame = window.requestAnimationFrame ||
 	window.mozRequestAnimationFrame    ||
 	window.oRequestAnimationFrame      ||
 	window.msRequestAnimationFrame     ||
-	function(callback){ window.setTimeout(callback, fps) };
+	function(callback){ window.setTimeout(callback, 1000/ups) };
 
 /* Data Container: Holds all of the flow data.
  * list: Array of Flows.
@@ -108,10 +108,10 @@ this.Location = function (lat, lng){
 
 /* Data Processing Routines */
 this.last = 0;
-this.fps = 1000/0.5; // Once every 2 seconds (half a frame per second)
+this.ups = 0.5; // Updates Per Second : (0.5 -> once every 2 seconds) 
 this.update = function (now){
 	var dt = now-this.last;
-	if( dt >= this.fps ){
+	if( dt >= 1000/this.ups ){
 		this.last = now;
 		if( UIHandle.websocket.readyState == UIHandle.websocket.OPEN ){
 			this.sendMessage(1, '{"command":"exclude", "options":"9000"}');
