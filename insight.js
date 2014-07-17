@@ -1,3 +1,4 @@
+var lastBlob;
 // Set cross-browser animation frame function
 var requestAnimFrame = window.requestAnimationFrame ||
 	window.webkitRequestAnimationFrame ||
@@ -85,11 +86,13 @@ this.Tuple = function (jso){
 
 this.Flow = function (jso){
 	this.tuple = new ctrl.model.Tuple(jso.tuple);
-	this.priority = jso.priority;
-	this.dupAcks = jso.dupAcks;
-	this.oops = jso.oops;
-	this.cwnd = jso.cwnd;
-	this.winScale = jso.winScale;
+	this.cid = jso.cid;
+	this.dupAcks = jso.DupAcksIn;
+	this.octsAcked = jso.HCThruOctetsAcked;
+	this.octsRcvd = jso.HCThruOctetsReceived;
+	this.octsIn = jso.DataOctetsIn;
+	this.octsOut = jso.DataOctetsOut;
+	this.curRTO = jso.CurRTO;
 	this.latLng = new ctrl.model.Location(jso.lat, jso.long);
 	this.getID = function (){
 		// Call tuple's getID function
@@ -144,9 +147,9 @@ this.processNewData = function (newFlows){
 
 /* Converts a propertly formated JSON string from the client to an array of Flows */
 this.jsonToFlows = function (strJSON){
+	lastBlob = strJSON;
 	var jso = JSON.parse(strJSON);
 	jso = jso.DATA;
-
 	var flows = new Array();
 
 	for(var i=0; i<jso.length; i++){
@@ -168,9 +171,10 @@ this.getRequest = function (url){
 	return http.responseText;
 }.bind(this);
 
+// Function that handles messages via websoecket from Client
 this.getMessage = function (dataStr){
 	if(dataStr != null){
-		// Compare new data to old
+		// Convert data to JSON then compare new data to old
 		this.processNewData(this.jsonToFlows(dataStr));
 	}
 }.bind(this);
@@ -179,7 +183,6 @@ this.sendMessage = function (type, arg){
 	switch(type){
 	case 1:		// Request Data
 		return UIHandle.websocket.send(arg);
-		//return clientSend(); // temp function call to simulate client
 		break;
 	case 2:		// Send Report
 		ctrl.view.report();
@@ -233,23 +236,15 @@ lineSym = {
 	scale: 4
 };
 
-antSym = {
-	path: 'm30.25,4.625l-6.375,2.875l-1.375,6.25l4.375,5l-3,4l-6.75,-2.5l-1,-4.625l-2.375,0.25l0.75,5.25l9,3.875l-0.5,4.75l-10.75,0l0.25,2.5l10.875,-0.125l1.625,4.125l-7.5,3.5l-3.5,5.625l2.125,1.125l3.5,-5.125l6.5,-2.125l-2.5,6.125l0.5,6.5l4.375,3.375l4.75,2.125l4.125,-2.125l3.25,-3.625l0.75,-6.625l-3.625,-5l7.875,1.5l3.375,3.25l2,-1.375l-3.25,-4.125l-8.25,-1.875l0.875,-4.875l10.625,-0.375l-0.125,-2.5l-10.625,0.375l-1.25,-6l8,-3.75l0.25,-5.125l-3,0.125l-0.25,3l-5.625,3.125l-1.75,-2.875l2.875,-4.25l-2,-7.5l-7.25,-2.125z',
-	fillColor: 'red',
-	fillOpacity: 1,
-	strokeColor: 'red',
-	scale: 0.25,
-	anchor: new google.maps.Point(30,30)
-};
-
-cloudSym = {
-	path: 'm54.85827 61.440945l39.496063 -51.56693l136.04724 -9.874016l53.758514 29.622047l63.635193 -20.845144l105.32544 8.776903l57.05249 53.761158l103.131226 9.874016l17.553833 97.64566l-46.078735 65.82941l-26.333374 82.28346l-60.341187 53.76114l-86.67453 -28.524933l-63.635162 35.107635l-107.5197 4.3884277l-44.98163 -55.95276l-91.06299 1.0971375l-50.46982 -65.82941l7.6797905 -57.05249l-61.440945 -41.690292l3.2939632 -72.41207z',
-	fillColor: '#E3F8FA',
+packetSym = {
+	path: 'M0,0 L2,2 M2,0 L0,2 M0,0 z', 
+	fillColor: 'black',
 	fillOpacity: 1,
 	strokeColor: 'black',
-	scale: 0.05,
-	anchor: new google.maps.Point(300,200)
-}
+	scale: 1.5,
+	strokeWidth: 1,
+	anchor: new google.maps.Point(1,1)
+};
 
 /* Event handlers */
 this.pathClickEvent = function (e, contentStr){
@@ -272,14 +267,6 @@ this.mapInit = function () {
 	};
 	UIHandle.map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 	UIHandle.infoWindow = new google.maps.InfoWindow();
-
-	// Create 'no location' cloud symbol
-	var cloud = new google.maps.Marker({
-		position: UIHandle.bermuda,
-	    	icon: cloudSym,
-	    	map: UIHandle.map,
-	    	zIndex: 0
-	});
 
 	// Create legend
 	var legend = document.getElementById('legend');
@@ -308,10 +295,10 @@ this.createUIElem = function (flow, multi){
 	UIHandle.paths[flow.getID()] = curved_line_generate({
 		path: [UIHandle.host, endpoint],
 	    	strokeOpacity: '0.9',
-		icons: [{icon: antSym, offset: '0', repeat: '40px'}],
-		strokeColor: 'green',
-		strokeWeight: 6,
-		multiplier: multi,
+		icons: [{icon: packetSym, offset: '0', repeat: this.mapSymDensity( Math.random() )}],
+		strokeColor: this.mapPathColor( Math.random() /*(flow.octsOut-flow.octsAcked)/flow.octOut*/ ),
+		strokeWeight: this.mapPathWidth(),
+		multiplier: (Math.log(multi+1)),
 		map: UIHandle.map,
 		zIndex: 3
 	});
@@ -319,11 +306,12 @@ this.createUIElem = function (flow, multi){
 	// Add event listner to path
 	google.maps.event.addListener(UIHandle.paths[flow.getID()], 'click', function(event){
 	var content = "Destination IP Address: "+flow.tuple.DestIP;
-	content += "<br>Duplicate ACKs: "+flow.DupAcks;
-	content += "<br>Out of order packets: "+flow.OOPS;
-	content += "<br>Window Scale: "+flow.WinScale;
-	content += "<br>cwnd: "+flow.cwnd;
-	content += "<br>Protocol: "+flow.tuple.protocol;
+	content += "<br>Duplicate ACKs: "+flow.dupAcks;
+	content += "<br>Data Octets In: "+flow.octsIn;
+	content += "<br>Data Octets Out: "+flow.octsOut;
+	content += "<br>HC Thru Octets Acked: "+flow.octsAcked;
+	content += "<br>HC Thru Octets Received: "+flow.octsRcvd;
+	content += "<br>Current RTO: "+flow.curRTO;
 	this.pathClickEvent(event, content);
 	}.bind(this));
 
@@ -331,7 +319,7 @@ this.createUIElem = function (flow, multi){
 }.bind(this);
 
 /* Updates new UI elements for the Flow passed in. */
-this.updateUIElem = function (flow){
+/*this.updateUIElem = function (flow){
 	//console.log("Updating element, id:"+flow.getID());
 
 	var endpoint = this.locToGLatLng(flow.latLng);
@@ -352,7 +340,7 @@ this.updateUIElem = function (flow){
 	UIHandle.paths[flow.getID()] = curved_line_generate({
 		path: [UIHandle.host, endpoint],
 	    	strokeOpacity: '0.9',
-		icons: [{icon: antSym, offset: '0', repeat: '40px'}],
+		icons: [{icon: packetSym, offset: '0', repeat: '40px'}],
 		strokeColor: 'green',
 		strokeWeight: 6,
 		multiplier: this.countDestIP(flow.tuple.DestIP),
@@ -370,7 +358,7 @@ this.updateUIElem = function (flow){
 	content += "<br>Protocol: "+flow.tuple.protocol;
 	this.pathClickEvent(event, content);
 	}.bind(this));
-}.bind(this);
+}.bind(this); */
 
 /* Removes new UI elements for the Flow passed in. */
 this.removeUIElem = function (flow){
@@ -382,6 +370,32 @@ this.removeUIElem = function (flow){
 	UIHandle.paths[flow.getID()].setMap(null); // remove from map
 	delete UIHandle.paths[flow.getID()]; // remove path
 }
+
+// Data to Graphics mapping functions
+this.mapPathColor = function (val){
+	if(val < 0.33){	return '#66CCFF'; /* 'Good' : light blue */ }
+	else if(val >= 0.33 & val < 0.66){return '#9933FF'; /* 'Okay' : light purple */ }
+	else if(val >= 0.66){return '#660066'; /* 'Bad' : dark purple */ }
+};
+
+this.mapPathWidth = function (val){
+	return 3;
+};
+
+this.mapSymColor = function (val){
+	return '#000000';
+};
+
+this.mapSymScale = function (val){
+	return 1.5;
+};
+
+this.mapSymDensity = function (val){
+	if(val < 0.33){ return '50px'; }
+	else if(val >= 0.33 && val < 0.66){ return '20px';}
+	else if(val >= 0.66){ return '10px';}
+};
+
 
 this.report = function (){
 	UIHandle.infoWindow.close();
