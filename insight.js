@@ -117,7 +117,7 @@ this.update = function (now){
 	if( dt >= 1000/this.ups ){
 		this.last = now;
 		if( UIHandle.websocket.readyState == UIHandle.websocket.OPEN ){
-			this.sendMessage(1, '{"command":"exclude", "options":"9000"}');
+			this.sendMessage(1, '{"command":"exclude", "options":"9000", "mask":"1249E104,0,0,0,0"}');
 		}
 	}
 	requestAnimFrame(this.update);
