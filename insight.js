@@ -8,7 +8,7 @@ var requestAnimFrame = window.requestAnimationFrame ||
 	function(callback){ window.setTimeout(callback, 1000/ups) };
 
 /* Data Container: Holds all of the flow data.
- * list: Array of Flows.
+ * list: Array of Flows. Do not modify directly - use functions 'add', 'update', & 'remove' instead.
  * hashtable: Maps a Flow's ID to the index of it's flow object in list.
  * add(Flow flow): Adds a flow to list and updates the hashtable with the flow's index.
  * update(String flowID, Flow newFlow): Overwrites the flow identified by flowID with newFlow.
@@ -39,6 +39,14 @@ DataContainer = {
 	remove: function (flow) {
 		delete this.hashtable[flow.tuple.getID()];
 		delete this.list[this.list.indexOf(flow)] // TODO fill undefined elements created by deleting
+	},
+
+	// Removes all data and recreates new data structures
+	destroy: function() {
+		delete this.hashtable;
+		delete this.list;
+		this.hashtable = new Object();
+		this.list = new Array();
 	},
 
 	getByID: function (id) {
@@ -133,10 +141,12 @@ this.processNewData = function (newFlows){
         }
 
 	// Remove old Data elements
-	delete DataContainer.list;
+	DataContainer.destroy();
 	
 	// Create new Data elements
-	DataContainer.list = newFlows;
+	for(var i=0; i<newFlows.length; i++){
+		DataContainer.add(newFlows[i]);
+	}
 
 	// Create new UI elements
 	for(var i=0; i<DataContainer.list.length; i++){
@@ -171,7 +181,7 @@ this.getRequest = function (url){
 	return http.responseText;
 }.bind(this);
 
-// Function that handles messages via websoecket from Client
+// Function that handles messages via websocket from Client
 this.getMessage = function (dataStr){
 	if(dataStr != null){
 		// Convert data to JSON then compare new data to old
@@ -185,7 +195,7 @@ this.sendMessage = function (type, arg){
 		return UIHandle.websocket.send(arg);
 		break;
 	case 2:		// Send Report
-		ctrl.view.report();
+		ctrl.view.report(arg);
 		break;
 	}
 }.bind(this);
@@ -247,11 +257,11 @@ packetSym = {
 };
 
 /* Event handlers */
-this.pathClickEvent = function (e, contentStr){
+this.pathClickEvent = function (e, contentStr, flow){
 	/* Write Content to Connection Details Panel */
 	this.writeToInfoPanel(contentStr);
 	/* Pop-up Report Button */
-	var str = '<div style="width: 200px; height: 100px;"><p>Report this connection to the Network Operation Center?</p><button type="button" id="reportButton" onclick="ctrl.view.report()">Yes</button></div>';
+	var str = '<div style="width: 200px; height: 100px;"><p>Report this connection to the Network Operation Center?</p><button type="button" id="reportButton" onclick="ctrl.view.report(\''+flow.getID()+'\')">Yes</button></div>';
 	UIHandle.infoWindow.setContent(str);
 	UIHandle.infoWindow.setPosition(e.latLng);
 	UIHandle.infoWindow.open(UIHandle.map);
@@ -312,7 +322,7 @@ this.createUIElem = function (flow, multi){
 	content += "<br>HC Thru Octets Acked: "+flow.octsAcked;
 	content += "<br>HC Thru Octets Received: "+flow.octsRcvd;
 	content += "<br>Current RTO: "+flow.curRTO;
-	this.pathClickEvent(event, content);
+	this.pathClickEvent(event, content, flow);
 	}.bind(this));
 
 	flow.drawn = true;
@@ -369,7 +379,7 @@ this.removeUIElem = function (flow){
 
 	UIHandle.paths[flow.getID()].setMap(null); // remove from map
 	delete UIHandle.paths[flow.getID()]; // remove path
-}
+};
 
 // Data to Graphics mapping functions
 this.mapPathColor = function (val){
@@ -397,13 +407,17 @@ this.mapSymDensity = function (val){
 };
 
 
-this.report = function (){
+this.report = function (flowID){
+	var flow = DataContainer.getByID(flowID);
+	var command = '{"command":"report", "options":{"cid": ' +flow.cid + ', "uri":"' +dbinfo.uri+ '", "port":' +dbinfo.port+ ', "dbname":"' +dbinfo.dbname+ '", "dbpass":"' +dbinfo.dbpass+ '", "nocemail":"' +dbinfo.nocemail+ '", "fname":"' +usrinfo.fname+ '", "lname":"' +usrinfo.lname+ '", "email":"' +usrinfo.email+ '", "institution":"' +usrinfo.institution+ '", "phone":"' +usrinfo.phone+ '"}}';
+	console.log(command);
+	//UIHandle.websocket.send(command);
 	UIHandle.infoWindow.close();
-}
+}.bind(this);
 
 this.centerMap = function (){
 	map.fitBounds(mapBounds());
-}
+};
 
 this.mapBounds = function (){
 	var points = DataContainer.list;
@@ -413,12 +427,12 @@ this.mapBounds = function (){
 		bounds.extend(points[i].latLng.toGLatLng());
 	}
 	return bounds;
-}
+};
 
 this.writeToInfoPanel = function (content){
 	var panel = document.getElementById('con-field');
 	panel.innerHTML = "<legend>Connection Details</legend>"+content;
-}
+};
 
 this.setConnectionStatus = function (str){
 	var panel = document.getElementById('con-stat');
@@ -428,7 +442,7 @@ this.setConnectionStatus = function (str){
 /* Converts dataObject's Location object to Google API's LatLng object */
 this.locToGLatLng = function (loc){
 	return new google.maps.LatLng(loc.lat, loc.lng);
-}
+};
 
 /* Returns the number of flows drawn onto the map whose DestIP matches ip */
 this.countDestIP = function (ip){
@@ -441,7 +455,24 @@ this.countDestIP = function (ip){
 	}
 
 	return cnt;
-}
+};
+
+dbinfo = {
+	uri: 'darksagan.psc.edu',
+	port: '3306',
+	dbname: 'insight',
+	dbpass: '',
+	nocemail: 'blearn@psc.edu'
+};
+
+// User information entered in by the user for NOC Reporting
+usrinfo = {
+	fname: '',
+	lname: '',
+	email: '',
+	institution: '',
+	phone: ''
+};
 
 }// end View
 
