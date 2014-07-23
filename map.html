@@ -4,22 +4,31 @@
 
 </head>
 <body>
-	<div id="container">
-		<div id="header"><p align="center">Insight</p></div>
-		<div id="map-canvas"></div>
-		<div id="info-canvas">
-			<fieldset id="con-stat"></fieldset>
-			<fieldset id="con-field"><legend>Connection Details</legend></fieldset>
-        		<fieldset id="filter-field">
-                		<legend>Filter Options</legend>
-                        	<input type="radio" name="filter" value="op1" />All<br />
-                        	<input type="radio" name="filter" value="opt2" />Opt2<br />
-                        	<input type="radio" name="filter" value="opt3" />Opt3<br />
-        		</fieldset>
-		</div>
-	</div>
-	<div id="legend"></div>
 
+  <div id="modal">
+    <div id="modalContent">
+      <h1>Send Report</h1>
+      <p>Please enter your information so the network operation center can identify you.</p>
+    </div>
+  </div>
+
+ <div id="container">
+    <div id="header"><p align="center">Insight</p></div>
+    <div id="map-canvas"></div>
+    <div id="info-canvas">
+      <fieldset id="con-stat"></fieldset>
+      <fieldset id="con-field"><legend>Connection Details</legend></fieldset>
+        <fieldset id="filter-field">
+          <legend>Filter Options</legend>
+          <input type="radio" name="filter" value="op1" />All<br />
+          <input type="radio" name="filter" value="opt2" />Opt2<br />
+          <input type="radio" name="filter" value="opt3" />Opt3<br />
+        </fieldset>
+    </div>
+  </div>
+
+  <div id="legend"></div>
+  
 <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.9&key=AIzaSyD2jW_4oXbWtCbXZ7L5wLdBoAtL6tAf8Fg&sensor=false">
 </script>
 <script src="http://cdn.jsdelivr.net/jquery/2.0.3/jquery-2.0.3.min.js"></script>
