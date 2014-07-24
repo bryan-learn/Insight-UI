@@ -14,7 +14,21 @@ body {
   padding-left: 10px;
   padding-bottom: 10px;
 }
-#hearder { height: 10% }
+H1 {
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-size: 24px;
+  color: black;
+}
+H2 {
+  text-align: center;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  font-size: 18px;
+  color: black;
+}
+
 #map-canvas { 
   float: left; 
   height: 90%; 
@@ -28,32 +42,20 @@ body {
   float: left;
   height: 90%;
   width: 35%;
-  border: 2px solid;
   border-radius: 10px;
   margin: 5px;
-  background-color: #F0F0FF;
+  background-color: #CCDDFF;
   position: relative;
   /*text-align: center*/
 }
-#con-stat {
+.info {
   position: relative;
-  height: 5%;
-  background-color: #F0F0FF
+  background-color: #F0F0FF;
+  border-radius: 10px;
+  margin: 5px;
+  padding: 2px;
 }
-#con-field {
-  position: relative;
-  height: 70%;
-  background-color: #F0F0FF
-}
-#filter-field {
-  position: relative;
-  background-color: #F0F0FF
-}
-#reportButton {
-  position: absolute;
-  margin-left: auto;
-  margin-right: auto
-}
+
 #legend {
   padding:3px;
   background-color: #F0F0FF
@@ -64,7 +66,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.8);
   z-index: 100;
   display: none;
 }

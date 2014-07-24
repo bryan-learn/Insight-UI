@@ -7,28 +7,41 @@
 
   <div id="modal">
     <div id="modalContent">
-      <h1>Send Report</h1>
-      <p>Please enter your information so the network operation center can identify you.</p>
+      <h1>Report</h1>
     </div>
   </div>
 
  <div id="container">
-    <div id="header"><p align="center">Insight</p></div>
+    <h1>Insight</h1>
     <div id="map-canvas"></div>
     <div id="info-canvas">
-      <fieldset id="con-stat"></fieldset>
-      <fieldset id="con-field"><legend>Connection Details</legend></fieldset>
-        <fieldset id="filter-field">
-          <legend>Filter Options</legend>
-          <input type="radio" name="filter" value="op1" />All<br />
-          <input type="radio" name="filter" value="opt2" />Opt2<br />
-          <input type="radio" name="filter" value="opt3" />Opt3<br />
-        </fieldset>
+      <div id="con-stat" class="info"></div>
+      <div id="con-field" class="info"><h2>Connection Details</h2></div>
+        <div id="filter-field" class="info">
+          <h2>Filter Options</h2>
+
+          <input type="radio" name="filter" value="exclude" checked />Exclude Ports:
+          <input type="text" name="exclude-list"><br>
+
+          <input type="radio" name="filter" value="include" />Include Ports:
+          <input type="text" name="inlude-list"><br>
+
+          <input type="radio" name="filter" value="ipfilter" />Include IPs:
+          <input type="text" name="ipfilter-list"><br>
+
+        </div>
+        <div id="contact-info" class="info"><h2>Contact Information</h2>
+          First Name:<input type="text" name="fname"><br>
+          Last Name:<input type="text" name="lname"><br>
+          Email:<input type="text" name="email"><br>
+          Institution:<input type="text" name="institution"><br>
+          Phone:<input type="text" name="phone"><br>
+        </div>
     </div>
   </div>
 
   <div id="legend"></div>
-  
+
 <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.9&key=AIzaSyD2jW_4oXbWtCbXZ7L5wLdBoAtL6tAf8Fg&sensor=false">
 </script>
 <script src="http://cdn.jsdelivr.net/jquery/2.0.3/jquery-2.0.3.min.js"></script>

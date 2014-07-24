@@ -188,9 +188,9 @@ this.getMessage = function (dataStr){
     // Convert data to JSON then compare new data to old
     this.processNewData(this.jsonToFlows(dataStr));
   }
-  switch(msgType){
+  /*switch(msgType){
     
-  }
+  }*/
 }.bind(this);
 
 this.sendMessage = function (type, arg){ 
@@ -438,7 +438,7 @@ usrinfo = {
 // Add function to modal div
 this.toggleModal = function(id) {
   var state = document.getElementById(id).style.display;
-  if( state == 'none' ){ document.getElementById(id).style.display = 'block'; }
+  if( state != 'block' ){ document.getElementById(id).style.display = 'block'; }
   else { document.getElementById(id).style.display = 'none'; }
 };
 
