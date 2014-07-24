@@ -471,7 +471,6 @@ this.websockInit = function (){
   }.bind(this);
   UIHandle.websocket.onmessage = function (message) {
     this.model.getMessage(message.data);
-    console.log(message);
   }.bind(this);
   UIHandle.websocket.onclose = function () {
     this.view.setConnectionStatus('Connection Lost!');
