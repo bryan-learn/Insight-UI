@@ -5,38 +5,40 @@
 </head>
 <body>
 
-  <div id="modal">
-    <div id="modalContent">
-      <h1>Report</h1>
-    </div>
+  <div id="modal" class="hidden">
+    <div id="modal-content"></div>
+  </div>
+  <div id="contact-info" class="hidden"><h2>Contact Information</h2>
+    <label>First Name:<input type="text" id="fname"></label><br>
+    <label>Last Name:<input type="text" id="lname"></label><br>
+    <label>Email:<input type="email" id="email"></label><br>
+    <label>Institution:<input type="text" id="institution"></label><br>
+    <label>Phone:<input type="tel" id="phone"></label><br>
+    <input type="button" value="Submit" onclick="ctrl.view.submitContactForm()">
   </div>
 
- <div id="container">
+
+  <div id="container">
     <h1>Insight</h1>
     <div id="map-canvas"></div>
     <div id="info-canvas">
       <div id="con-stat" class="info"></div>
-      <div id="con-field" class="info"><h2>Connection Details</h2></div>
-        <div id="filter-field" class="info">
-          <h2>Filter Options</h2>
+      <div id="filter-field" class="info">
+        <h2>Filter Options</h2>
 
-          <input type="radio" name="filter" value="exclude" checked />Exclude Ports:
-          <input type="text" name="exclude-list"><br>
+        <input type="radio" name="filter" value="exclude" checked />Exclude Ports:
+        <input type="text" name="exclude-list"><br>
 
-          <input type="radio" name="filter" value="include" />Include Ports:
-          <input type="text" name="inlude-list"><br>
+        <input type="radio" name="filter" value="include" />Include Ports:
+        <input type="text" name="inlude-list"><br>
 
-          <input type="radio" name="filter" value="ipfilter" />Include IPs:
-          <input type="text" name="ipfilter-list"><br>
+        <input type="radio" name="filter" value="ipfilter" />Include IPs:
+        <input type="text" name="ipfilter-list"><br>
 
-        </div>
-        <div id="contact-info" class="info"><h2>Contact Information</h2>
-          <label>First Name:<input type="text" name="fname"></label><br>
-          <label>Last Name:<input type="text" name="lname"></label><br>
-          <label>Email:<input type="text" name="email"></label><br>
-          <label>Institution:<input type="text" name="institution"></label><br>
-          <label>Phone:<input type="text" name="phone"></label><br>
-        </div>
+      </div>
+      <div id="con-field" class="info">
+        <h2>Connection Details</h2>
+      </div>
     </div>
   </div>
 
@@ -44,7 +46,7 @@
 
 <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.9&key=AIzaSyD2jW_4oXbWtCbXZ7L5wLdBoAtL6tAf8Fg&sensor=false">
 </script>
-<script src="http://cdn.jsdelivr.net/jquery/2.0.3/jquery-2.0.3.min.js"></script>
+<script type="text/javascript" src="jquery-1.11.1.min.js"></script>
 <script type="text/javascript" src="curved.line-0.0.2.js"></script>
 <script type="text/javascript" src="insight.js"></script>
 </body>
