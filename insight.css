@@ -14,19 +14,19 @@ body {
   padding-left: 10px;
   padding-bottom: 10px;
 }
-H1 {
+h1 {
   text-align: center;
   margin-top: 10px;
   margin-bottom: 10px;
   font-size: 24px;
-  color: black;
+  color: darkblue;
 }
-H2 {
+h2 {
   text-align: center;
   margin-top: 5px;
   margin-bottom: 5px;
   font-size: 18px;
-  color: black;
+  color: darkblue;
 }
 
 #map-canvas { 
@@ -55,10 +55,12 @@ H2 {
   margin: 5px;
   padding: 2px;
 }
-
 #legend {
   padding:3px;
   background-color: #F0F0FF
+}
+.hidden {
+  display: none;
 }
 #modal {
   position: fixed;
@@ -70,14 +72,35 @@ H2 {
   z-index: 100;
   display: none;
 }
-#modalContent {
+#modal-content {
   width: 400px;
   position: relative;
   margin: 10% auto;
   padding: 5px 20px 13px 20px;
   border-radius: 10px;
   background: #fff;
-  background: -moz-linear-gradient(#fff, #999);
-  background: -webkit-linear-gradient(#fff, #999);
-  background: -o-linear-gradient(#fff, #999);
+  background: -moz-linear-gradient(#CCDDFF, #F0F0FF);
+  background: -webkit-linear-gradient(#CCDDFF, #F0F0FF);
+  background: -o-linear-gradient(#CCDDFF, #F0F0FF);
+}
+.close {
+  width:25px;
+  height:25px;
+  display:block;
+  text-transform:uppercase;
+  text-decoration:none;
+  color:#fff;
+  background:#F00;
+  font-family:"Tahoma", Helvetica, sans-serif;
+  text-align:center;
+  font-size:18px;
+  line-height:1.4em;
+  border-radius:50%;
+  -moz-border-radius:50%;
+  -webkit-border-radius:50%;
+  box-shadow:0px 0px 2px 0px #666;
+  -moz-box-shadow:0px 0px 2px 0px #666;
+  -webkit-box-shadow:0px 0px 2px 0px #666;
+  text-indent:1px;
+  font-weight:bold;
 }

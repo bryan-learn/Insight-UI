@@ -262,10 +262,14 @@ packetSym = {
 
 /* Event handlers */
 this.pathClickEvent = function (e, contentStr, flow){
+
   /* Write Content to Connection Details Panel */
-  this.writeToInfoPanel(contentStr);
+  this.writeToInfoPanel(contentStr); // TODO Run this on each update if a flow is selected
+
+  localStorage.flow = flow; // Copy flow reference to report
+
   /* Pop-up Report Button */
-  var str = '<div style="width: 200px; height: 100px;"><p>Report this connection to the Network Operation Center?</p><button type="button" id="reportButton" onclick="ctrl.view.report(\''+flow.getID()+'\')">Yes</button></div>';
+  var str = '<div style="width: 200px; height: 100px;"><p>Report this connection to the Network Operation Center?</p><button type="button" id="reportButton" onclick="ctrl.view.report()">Yes</button></div>';
   UIHandle.infoWindow.setContent(str);
   UIHandle.infoWindow.setPosition(e.latLng);
   UIHandle.infoWindow.open(UIHandle.map);
@@ -295,7 +299,6 @@ this.mapInit = function () {
 
 /* Creates new UI elements for the Flow passed in. */
 this.createUIElem = function (flow, multi){
-  //console.log("Creating element, id:"+flow.getID());
   // Create marker at flow endpoint
   var endpoint = this.locToGLatLng(flow.latLng);
   UIHandle.markers[flow.getID()] = new google.maps.Marker({
@@ -368,12 +371,12 @@ this.mapSymDensity = function (val){
 };
 
 
-this.report = function (flowID){
-  var flow = DataContainer.getByID(flowID);
-  var command = '{"command":"report", "options":{"cid": ' +flow.cid + ', "uri":"' +dbinfo.uri+ '", "port":' +dbinfo.port+ ', "dbname":"' +dbinfo.dbname+ '", "dbpass":"' +dbinfo.dbpass+ '", "nocemail":"' +dbinfo.nocemail+ '", "fname":"' +usrinfo.fname+ '", "lname":"' +usrinfo.lname+ '", "email":"' +usrinfo.email+ '", "institution":"' +usrinfo.institution+ '", "phone":"' +usrinfo.phone+ '"}}';
-  //console.log(command);
+this.report = function (){
+  var command = '{"command":"report", "options":{"cid": ' +localStorage.flow.cid + ', "uri":"' +localStorage.uri+ '", "port":' +localStorage.port+ ', "dbname":"' +localStorage.dbname+ '", "dbpass":"' +localStorage.dbpass+ '", "nocemail":"' +localStorage.nocemail+ '", "fname":"' +localStorage.fname+ '", "lname":"' +localStorage.lname+ '", "email":"' +localStorage.email+ '", "institution":"' +localStorage.institution+ '", "phone":"' +localStorage.phone+ '"}}';
   UIHandle.websocket.send(command);
   UIHandle.infoWindow.close();
+
+  ctrl.view.showReport();
 }.bind(this);
 
 this.centerMap = function (){
@@ -391,8 +394,8 @@ this.mapBounds = function (){
 };
 
 this.writeToInfoPanel = function (content){
-  var panel = document.getElementById('con-field');
-  panel.innerHTML = "<legend>Connection Details</legend>"+content;
+  $('#con-field').empty();
+  $('#con-field').append("<h2>Connection Details</h2>"+content);
 };
 
 this.setConnectionStatus = function (str){
@@ -418,29 +421,70 @@ this.countDestIP = function (ip){
   return cnt;
 };
 
-dbinfo = {
-  uri: 'darksagan.psc.edu',
-  port: '3306',
-  dbname: 'insight',
-  dbpass: '',
-  nocemail: 'blearn@psc.edu'
+// Database information
+localStorage.uri = 'darksagan.psc.edu';
+localStorage.port = '3306';
+localStorage.dbname = 'insight';
+localStorage.dbpass = '';
+localStorage.nocemail = 'blearn@psc.edu';
+
+// Set the content to be displayed in the modal box
+this.setModalContent = function(htmlStr){
+  $('#modal-content').empty();
+  $('#modal-content').append(htmlStr);
+}
+
+// Toggle the modal box's visiblity
+this.toggleModal = function() {
+  var state = $('#modal').css('display');
+  if( state != 'block' ){ $('#modal').css('display', 'block'); }
+  else { $('#modal').css('display', 'none'); }
 };
 
-// User information entered in by the user for NOC Reporting
-usrinfo = {
-  fname: '',
-  lname: '',
-  email: '',
-  institution: '',
-  phone: ''
-};
+// Pull values from each contact-info field and stores into structure
+this.getContactInfo = function() {
+  localStorage.fname = $('#fname').val(); 
+  localStorage.lname = $('#lname').val(); 
+  localStorage.email = $('#email').val(); 
+  localStorage.institution = $('#institution').val(); 
+  localStorage.phone = $('#phone').val(); 
+}.bind(this);
 
-// Add function to modal div
-this.toggleModal = function(id) {
-  var state = document.getElementById(id).style.display;
-  if( state != 'block' ){ document.getElementById(id).style.display = 'block'; }
-  else { document.getElementById(id).style.display = 'none'; }
-};
+// Checks if any contact-info fields are empty
+this.hasContactInfo = function(){
+  if( $('#fname').val() == "" | $('#lname').val() == "" |$('#email').val() == "" | $('#institution').val() == "" | $('#phone').val() == "" ){
+    return false;
+  }else{ return true; }
+}.bind(this);
+
+// Submits Contact Info form and closes modal box
+this.submitContactForm = function(){
+  if( this.hasContactInfo() ){
+    this.getContactInfo();
+    localStorage.hasContactInfo = true;
+    this.toggleModal();
+    this.setModalContent('');
+  }
+}.bind(this);
+
+// Displays report in modal box
+this.showReport = function() {
+  // Add exit button
+  htmlStr = ' <a href="#" class=".close" onclick="ctrl.view.toggleModal()">&#10006</a> ';
+  // Display report content
+  htmlStr += '<h1>Report Sent</h1>'
+    + '<br><h2>Contact Information</h2>'
+    + '<br>First Name: '+localStorage.fname
+    + '<br>Last Name: '+localStorage.lname
+    + '<br>Email: '+localStorage.email
+    + '<br>Institution: '+localStorage.institution
+    + '<br>Phone Number: '+localStorage.phone
+    + '<br><h2>Connection Information</h2>'
+    + '<br>CID: '+localStorage.flow.cid
+
+  this.setModalContent(htmlStr);
+  this.toggleModal();
+}.bind(this);
 
 }// end View
 
@@ -471,7 +515,6 @@ this.websockInit = function (){
   }.bind(this);
   UIHandle.websocket.onmessage = function (message) {
     this.model.getMessage(message.data);
-    console.log(message);
   }.bind(this);
   UIHandle.websocket.onclose = function () {
     this.view.setConnectionStatus('Connection Lost!');
@@ -485,4 +528,12 @@ this.websockInit = function (){
 /* Instantiate MVC */
 var ctrl = new Controller();
 
+// If no contact info found, ask user for info
+if( localStorage.hasContactInfo != "true"){
+  console.log('enter info please');
+  ctrl.view.setModalContent( $('#contact-info').html() );
+  ctrl.view.toggleModal();
+}
+
+// Initialize websocket
 ctrl.websockInit();
