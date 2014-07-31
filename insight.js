@@ -1,4 +1,4 @@
-var lastBlob;
+var lastBlob; // DEBUG
 // Set cross-browser animation frame function
 var requestAnimFrame = window.requestAnimationFrame ||
   window.webkitRequestAnimationFrame ||
@@ -7,51 +7,58 @@ var requestAnimFrame = window.requestAnimationFrame ||
   window.msRequestAnimationFrame     ||
   function(callback){ window.setTimeout(callback, 1000/ups) };
 
+// Close the websocket before leaving the page
+window.addEventListener('unload', function(event){UIHandle.websocket.close();} );
+
 /* Data Container: Holds all of the flow data.
  * list: Array of Flows. Do not modify directly - use functions 'add', 'update', & 'remove' instead.
- * hashtable: Maps a Flow's ID to the index of it's flow object in list.
- * add(Flow flow): Adds a flow to list and updates the hashtable with the flow's index.
+ * add(Flow flow): Adds a flow to list.
  * update(String flowID, Flow newFlow): Overwrites the flow identified by flowID with newFlow.
- * remove(String flowID): Deletes the corresponding flow from list and hashtable.
+ * remove(String flowID): Deletes the corresponding flow from list.
  * getByID(String flowID): Returns the flow stored in list matching on the flowID.
  * */
 DataContainer = {
   list: new Array(),
 
-  hashtable: new Object(),
-
   // Adds a Flow to DataContainer
   add: function (flow){
     //this.table[con.tuple] = con;
     this.list.push(flow); // add flow to list
-    this.hashtable[flow.tuple.getID()] = this.list.indexOf(flow); // add flows's list index to hash table
-  },
-
-  // Updates a Flow in DataContainer
-  update: function (tupleID, newFlow){
-    // if the flows have the same ID (its the same flow)
-    if( newFlow.tuple.getID() == this.list[this.hashtable[tupleID]].tuple.getID() ){
-      this.list[this.hashtable[tupleID]] = newFlow; // reassign flow to newFlow
-    }
   },
 
   // Removes a Flow from DataContainer
   remove: function (flow) {
-    delete this.hashtable[flow.tuple.getID()];
-    delete this.list[this.list.indexOf(flow)] // TODO fill undefined elements created by deleting
+    delete this.list[this.list.indexOf(flow)]
   },
 
   // Removes all data and recreates new data structures
   destroy: function() {
-    delete this.hashtable;
     delete this.list;
-    this.hashtable = new Object();
     this.list = new Array();
   },
 
-  getByID: function (id) {
-    return this.list[this.hashtable[id]];
+  getByCid: function (id) {
+    var indx = null;
+    $.each(this.list, function(i, v){
+      if(v.cid == id){
+        indx = i;
+      }
+    });
+    if(indx != null){
+      return this.list[indx];
+    }
+    else{
+      return null;
+    }
   }
+};
+
+/* Location
+ * Object holding a Lattitude, Longitude ordered pair 
+ */
+Location = function (lat, lng){
+  this.lat = lat;
+  this.lng = lng;
 };
 
 /* ========== Model ========== 
@@ -64,69 +71,50 @@ function Model() {
  *   Tuple(SrcIP, SrcPort, DestIP, DestPort)
  *  Tuple(jso)
  */
-this.Tuple = function (SrcIP, SrcPort, DestIP, DestPort){
-  this.SrcIP = SrcIP;
-  this.SrcPort = SrcPort;
-  this.DestIP = DestIP;
-  this.DestPort = DestPort;
-  //this.protocol = protocol;
-  this.getID = function (){
-    // Turn each value into string then concatenate
-    plainStr = SrcIP.toString()+SrcPort.toString()+DestIP.toString()+DestPort.toString();
 
-    return plainStr;
-  };
-}
-
-this.Tuple = function (jso){
-  this.SrcIP = jso.SrcIP;
-  this.SrcPort = jso.SrcPort;
-  this.DestIP = jso.DestIP;
-  this.DestPort = jso.DestPort;
-  //this.protocol = jso.protocol;
-  this.getID = function (){
+this.Tuple = {
+  getID: function (){
     // Turn each value into string then concatenate
     plainStr = this.SrcIP.toString()+this.SrcPort.toString()+this.DestIP.toString()+this.DestPort.toString();
 
     return plainStr;
-  };
-}
+  }
+};
 
-this.Flow = function (jso){
-  this.tuple = new ctrl.model.Tuple(jso.tuple);
-  this.cid = jso.cid;
-  this.dupAcks = jso.DupAcksIn;
-  this.octsAcked = jso.HCThruOctetsAcked;
-  this.octsRcvd = jso.HCThruOctetsReceived;
-  this.octsIn = jso.DataOctetsIn;
-  this.octsOut = jso.DataOctetsOut;
-  this.curRTO = jso.CurRTO;
-  this.latLng = new ctrl.model.Location(jso.lat, jso.long);
-  this.getID = function (){
+this.Flow = {
+  latLng: function(){
+    return new Location(this.lat, this.long);
+  },
+  getID: function (){
     // Call tuple's getID function
     return this.tuple.getID();
-  };
-  this.drawn = false;
+  },
+  drawn: false // Drawn is set to true once UI element is created for the flow.
 };
 
-
-/* Location
- * Object holding a Lattitude, Longitude ordered pair 
- */
-this.Location = function (lat, lng){
-  this.lat = lat;
-  this.lng = lng;
-};
 
 /* Data Processing Routines */
 this.last = 0;
 this.ups = 0.5; // Updates Per Second : (0.5 -> once every 2 seconds) 
 this.update = function (now){
-  var dt = now-this.last;
-  if( dt >= 1000/this.ups ){
-    this.last = now;
+  var dt = now-this.last; // Find delta between update calls
+  if( dt >= 1000/this.ups ){ // Update if delta is large enough
+    this.last = now; // Restart counter
+
+    // Request new data from client
     if( UIHandle.websocket.readyState == UIHandle.websocket.OPEN ){
       this.sendMessage(1, '{"command":"exclude", "options":"9000", "mask":"1249E104,0,0,0,0"}');
+    }
+
+    // Update selectedFlow if exists
+    if(ctrl.view.selectedFlow != null){
+      // Needed to update selectedFlow data due to data creation/destruction process
+      ctrl.view.selectedFlow = DataContainer.getByCid(ctrl.view.selectedFlow.cid);
+    }
+
+    // Update Connection Details panel
+    if(ctrl.view.selectedFlow != null){
+      ctrl.view.writeFlowDetails();
     }
   }
   requestAnimFrame(this.update);
@@ -137,9 +125,9 @@ this.update = function (now){
  */
 this.processNewData = function (newFlows){
   // Remove old UI elements
-        for(var i=0; i<DataContainer.list.length; i++){
-                ctrl.view.removeUIElem(DataContainer.list[i]);
-        }
+  for(var i=0; i<DataContainer.list.length; i++){
+          ctrl.view.removeUIElem(DataContainer.list[i]);
+  }
 
   // Remove old Data elements
   DataContainer.destroy();
@@ -156,15 +144,14 @@ this.processNewData = function (newFlows){
 
 };
 
-/* Converts a propertly formated JSON string from the client to an array of Flows */
 this.jsonToFlows = function (strJSON){
-  lastBlob = strJSON;
-  var jso = JSON.parse(strJSON);
-  jso = jso.DATA;
+  lastBlob = strJSON; // DEBUG
+  var jso = JSON.parse(strJSON).DATA;
   var flows = new Array();
 
   for(var i=0; i<jso.length; i++){
-    flows[i] = new this.Flow(jso[i]);
+    flows[i] = $.extend(true, flows[i], jso[i], this.Flow);
+    flows[i].tuple = $.extend(true, flows[i].tuple, this.Tuple);
   }
 
   return flows;
@@ -234,6 +221,9 @@ UIHandle = {
  */
 function View() {
 
+// Flow that is currently selected by user
+this.selectedFlow = null; 
+
 // Define custom symbols
 nodeSym = {
   path: 'M0 0 m -8, 0 a 8,8 0 1,0 16,0 a 8,8, 0 1,0 -16,0',
@@ -261,10 +251,9 @@ packetSym = {
 };
 
 /* Event handlers */
-this.pathClickEvent = function (e, contentStr, flow){
+this.pathClickEvent = function (e, flow){
 
-  /* Write Content to Connection Details Panel */
-  this.writeToInfoPanel(contentStr); // TODO Run this on each update if a flow is selected
+  this.selectedFlow = flow;
 
   localStorage.cid = flow.cid; // Copy flow reference to report
 
@@ -300,7 +289,7 @@ this.mapInit = function () {
 /* Creates new UI elements for the Flow passed in. */
 this.createUIElem = function (flow, multi){
   // Create marker at flow endpoint
-  var endpoint = this.locToGLatLng(flow.latLng);
+  var endpoint = this.locToGLatLng(flow.latLng());
   UIHandle.markers[flow.getID()] = new google.maps.Marker({
     position: endpoint,
         icon: nodeSym,
@@ -322,14 +311,7 @@ this.createUIElem = function (flow, multi){
 
   // Add event listner to path
   google.maps.event.addListener(UIHandle.paths[flow.getID()], 'click', function(event){
-    var content = "Destination IP Address: "+flow.tuple.DestIP;
-    content += "<br>Duplicate ACKs: "+flow.dupAcks;
-    content += "<br>Data Octets In: "+flow.octsIn;
-    content += "<br>Data Octets Out: "+flow.octsOut;
-    content += "<br>HC Thru Octets Acked: "+flow.octsAcked;
-    content += "<br>HC Thru Octets Received: "+flow.octsRcvd;
-    content += "<br>Current RTO: "+flow.curRTO;
-    this.pathClickEvent(event, content, flow);
+    this.pathClickEvent(event, flow);
   }.bind(this));
 
   flow.drawn = true;
@@ -372,7 +354,7 @@ this.mapSymDensity = function (val){
 
 
 this.report = function (){
-  var command = '{"command":"report", "options":{"cid": ' +localStorage.cid + ', "uri":"' +localStorage.uri+ '", "port":' +localStorage.port+ ', "dbname":"' +localStorage.dbname+ '", "dbpass":"' +localStorage.dbpass+ '", "nocemail":"' +localStorage.nocemail+ '", "fname":"' +localStorage.fname+ '", "lname":"' +localStorage.lname+ '", "email":"' +localStorage.email+ '", "institution":"' +localStorage.institution+ '", "phone":"' +localStorage.phone+ '"}}';
+  var command = '{"command":"report", "options":{"cid": ' +localStorage.cid + ', "uri":"' +localStorage.uri+ '", "port":' +localStorage.port+ ', "db":"' +localStorage.db+ '", "dbname":"' +localStorage.dbname+ '", "dbpass":"' +localStorage.dbpass+ '", "nocemail":"' +localStorage.nocemail+ '", "fname":"' +localStorage.fname+ '", "lname":"' +localStorage.lname+ '", "email":"' +localStorage.email+ '", "institution":"' +localStorage.institution+ '", "phone":"' +localStorage.phone+ '"}}';
   UIHandle.websocket.send(command);
   UIHandle.infoWindow.close();
 
@@ -393,10 +375,31 @@ this.mapBounds = function (){
   return bounds;
 };
 
-this.writeToInfoPanel = function (content){
-  $('#con-field').empty();
-  $('#con-field').append("<h2>Connection Details</h2>"+content);
-};
+this.writeFlowDetails = function (){
+  // If a flow is selected
+  if(this.selectedFlow != null){
+    var contentStr = '';
+    $.each(this.selectedFlow, function(key, val){
+      if(key == 'tuple'){
+        $.each(val, function(k,v){
+          if(typeof v === 'number' || typeof v === 'string'){
+            contentStr += "<br>"+k+": "+v;
+          }
+        });
+      }
+      if( typeof val === 'number' || typeof val === 'string' ){
+        contentStr += "<br>"+key+": "+val;
+      }
+    });
+  
+    $('#con-field').empty();
+    $('#con-field').append("<h2>Connection Details</h2>"+contentStr);
+  }
+  else{
+    $('#con-field').empty();
+    $('#con-field').append("<h2>Connection Details</h2>");
+  }
+}.bind(this);
 
 this.setConnectionStatus = function (str){
   var panel = document.getElementById('con-stat');
@@ -424,6 +427,7 @@ this.countDestIP = function (ip){
 // Database information
 localStorage.uri = 'darksagan.psc.edu';
 localStorage.port = '3306';
+localStorage.db = 'insight';
 localStorage.dbname = 'insight';
 localStorage.dbpass = '';
 localStorage.nocemail = 'blearn@psc.edu';
