@@ -116,6 +116,9 @@ this.update = function (now){
     if(ctrl.view.selectedFlow != null){
       ctrl.view.writeFlowDetails();
     }
+
+    // Update Contact Info panel
+    ctrl.view.refreshContactInfo();
   }
   requestAnimFrame(this.update);
 }.bind(this);
@@ -439,13 +442,16 @@ this.setModalContent = function(htmlStr){
 }
 
 // Toggle the modal box's visiblity
-this.toggleModal = function() {
-  var state = $('#modal').css('display');
-  if( state != 'block' ){ $('#modal').css('display', 'block'); }
-  else { $('#modal').css('display', 'none'); }
+this.showModal = function(show) {
+console.log(show);
+  if(show == true){
+    $('#modal').css('display', 'block');
+  }else if(show == false){
+    $('#modal').css('display', 'none');
+  }
 };
 
-// Pull values from each contact-info field and stores into structure
+// Pull values from each contact-info-form field and stores into structure
 this.getContactInfo = function() {
   localStorage.fname = $('#fname').val(); 
   localStorage.lname = $('#lname').val(); 
@@ -454,19 +460,61 @@ this.getContactInfo = function() {
   localStorage.phone = $('#phone').val(); 
 }.bind(this);
 
-// Checks if any contact-info fields are empty
+// Checks if any contact-info-form fields are empty
 this.hasContactInfo = function(){
   if( $('#fname').val() == "" | $('#lname').val() == "" |$('#email').val() == "" | $('#institution').val() == "" | $('#phone').val() == "" ){
     return false;
   }else{ return true; }
 }.bind(this);
 
+// Populates contact-info fields with persistent data storage (localStorage)
+this.refreshContactInfo = function(){
+  if( localStorage.hasContactInfo == 'true' ){
+    $('#usr-fname').val(localStorage.fname);
+    $('#usr-lname').val(localStorage.lname);
+    $('#usr-email').val(localStorage.email);
+    $('#usr-institution').val(localStorage.institution);
+    $('#usr-phone').val(localStorage.phone);
+  }
+}.bind(this);
+
+// Pop-up modal box to fill out contact-info-form
+this.editContactInfo = function(){
+  
+  ctrl.view.setModalContent( $('#contact-info-form').html() );
+  $('#fname').val(localStorage.fname);
+  $('#lname').val(localStorage.lname);
+  $('#email').val(localStorage.email);
+  $('#institution').val(localStorage.institution);
+  $('#phone').val(localStorage.phone);
+  ctrl.view.showModal(true);
+}.bind(this);
+
+// Clears stored contact information from form and localStorage
+this.clearContactInfo = function(){
+  // clear localStorage
+  delete localStorage.fname;
+  delete localStorage.lname;
+  delete localStorage.email;
+  delete localStorage.institution;
+  delete localStorage.phone;
+ 
+  localStorage.hasContactInfo = false;
+
+  // clear contact-info panel
+  $('#fname').val('');
+  $('#lname').val('');
+  $('#email').val('');
+  $('#institution').val('');
+  $('#phone').val('');
+}
+
 // Submits Contact Info form and closes modal box
 this.submitContactForm = function(){
   if( this.hasContactInfo() ){
     this.getContactInfo();
     localStorage.hasContactInfo = true;
-    this.toggleModal();
+    this.showModal(false);
     this.setModalContent('');
   }
 }.bind(this);
@@ -474,7 +522,7 @@ this.submitContactForm = function(){
 // Displays report in modal box
 this.showReport = function() {
   // Add exit button
-  htmlStr = ' <a href="#" class=".close" onclick="ctrl.view.toggleModal()">&#10006</a> ';
+  htmlStr = ' <a href="#" class=".close" onclick="ctrl.view.showModal(false)">&#10006</a> ';
   // Display report content
   htmlStr += '<h1>Report Sent</h1>'
     + '<br><h2>Contact Information</h2>'
@@ -487,7 +535,7 @@ this.showReport = function() {
     + '<br>CID: '+localStorage.cid
 
   this.setModalContent(htmlStr);
-  this.toggleModal();
+  this.showModal(true);
 }.bind(this);
 
 }// end View
@@ -534,9 +582,8 @@ var ctrl = new Controller();
 
 // If no contact info found, ask user for info
 if( localStorage.hasContactInfo != "true"){
-  console.log('enter info please');
-  ctrl.view.setModalContent( $('#contact-info').html() );
-  ctrl.view.toggleModal();
+  ctrl.view.setModalContent( $('#contact-info-form').html() );
+  ctrl.view.showModal(true);
 }
 
 // Initialize websocket
