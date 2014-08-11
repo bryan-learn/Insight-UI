@@ -53,6 +53,12 @@ DataContainer = {
   }
 };
 
+// Message Types
+MsgType = {
+  DATA: 1,
+  REPORT: 1
+};
+
 /* Location
  * Object holding a Lattitude, Longitude ordered pair 
  */
@@ -103,7 +109,29 @@ this.update = function (now){
 
     // Request new data from client
     if( UIHandle.websocket.readyState == UIHandle.websocket.OPEN ){
-      this.sendMessage(1, '{"command":"exclude", "options":"9000", "mask":"1249E104,0,0,0,0"}');
+      var msg = new Object();
+      var commandCnt = 1;
+
+      // default command: list all connections with given mask
+      msg['1'] = [{"command": "list", "mask": "1249E104,0,0,0,0"}];
+
+      //check for filters to be applied - overwrite default if any filters are applied.
+      if( $('#filter-exclude').prop('checked') === true ){
+        msg[commandCnt.toString()] = [{"command": "exclude", "options": $('#exclude-list').val(), "mask": "1249E104,0,0,0,0"}];
+        commandCnt++;
+      }
+      if( $('#filter-include').prop('checked') === true ){
+        msg[commandCnt.toString()] = [{"command": "include", "options": $('#include-list').val(), "mask": "1249E104,0,0,0,0"}];
+        commandCnt++;
+      }
+      if( $('#filter-ipfilter').prop('checked') === true ){
+        msg[commandCnt.toString()] = [{"command": "ipfilter", "options": $('#ipfilter-list').val(), "mask": "1249E104,0,0,0,0"}];
+        commandCnt++;
+      }
+
+      console.log(msg);
+      this.sendMessage(MsgType.DATA, JSON.stringify(msg));
+
     }
 
     // Update selectedFlow if exists
@@ -147,9 +175,8 @@ this.processNewData = function (newFlows){
 
 };
 
-this.jsonToFlows = function (strJSON){
-  lastBlob = strJSON; // DEBUG
-  var jso = JSON.parse(strJSON).DATA;
+this.jsonToFlows = function (inJSON){
+  var jso = inJSON.DATA;
   var flows = new Array();
 
   for(var i=0; i<jso.length; i++){
@@ -174,23 +201,41 @@ this.getRequest = function (url){
 
 // Function that handles messages via websocket from Client
 this.getMessage = function (dataStr){
+  lastBlob = dataStr; // DEBUG
+
   if(dataStr != null){
-    // Convert data to JSON then compare new data to old
-    this.processNewData(this.jsonToFlows(dataStr));
+    var json = JSON.parse(dataStr);
+    var msgType = null;
+    if(json.DATA !== undefined){
+      msgType = MsgType.DATA;
+    }else if(json.function == "report"){
+      msgType = MsgType.REPORT;
+    }
+
+    switch(msgType){
+      case MsgType.DATA:
+        // Convert data to a JSON object then apply data.
+        this.processNewData(this.jsonToFlows(json));
+        break;
+      case MsgType.REPORT:
+        if(json.result == "success"){ // success - show report
+          ctrl.view.showReport();
+        }else if(json.result == "error"){ // failed - try to resend
+          ctrl.view.report();
+        }
+        break;
+    }
   }
-  /*switch(msgType){
-    
-  }*/
 }.bind(this);
 
 this.sendMessage = function (type, arg){ 
   switch(type){
-  case 1:    // Request Data
-    return UIHandle.websocket.send(arg);
-    break;
-  case 2:    // Send Report
-    ctrl.view.report(arg);
-    break;
+    case MsgType.DATA:    // Request Data
+      UIHandle.websocket.send(arg);
+      break;
+    case MsgType.REPORT:    // Send Report
+      UIHandle.websocket.send(arg);
+      break;
   }
 }.bind(this);
 
@@ -198,7 +243,6 @@ this.sendMessage = function (type, arg){
 
 UIHandle = {
   map: null,
-  infoWindow: null,
   host: null,
   paths: new Object(),
   markers: new Object(),
@@ -260,11 +304,6 @@ this.pathClickEvent = function (e, flow){
 
   localStorage.cid = flow.cid; // Copy flow reference to report
 
-  /* Pop-up Report Button */
-  var str = '<div style="width: 200px; height: 100px;"><p>Report this connection to the Network Operation Center?</p><button type="button" id="reportButton" onclick="ctrl.view.report()">Yes</button></div>';
-  UIHandle.infoWindow.setContent(str);
-  UIHandle.infoWindow.setPosition(e.latLng);
-  UIHandle.infoWindow.open(UIHandle.map);
 }.bind(this);
 
 /* Map initialization function */
@@ -276,7 +315,6 @@ this.mapInit = function () {
     zoom: 8
   };
   UIHandle.map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
-  UIHandle.infoWindow = new google.maps.InfoWindow();
 
   // Create legend
   var legend = document.getElementById('legend');
@@ -358,10 +396,8 @@ this.mapSymDensity = function (val){
 
 this.report = function (){
   var command = '{"command":"report", "options":{"cid": ' +localStorage.cid + ', "uri":"' +localStorage.uri+ '", "port":' +localStorage.port+ ', "db":"' +localStorage.db+ '", "dbname":"' +localStorage.dbname+ '", "dbpass":"' +localStorage.dbpass+ '", "nocemail":"' +localStorage.nocemail+ '", "fname":"' +localStorage.fname+ '", "lname":"' +localStorage.lname+ '", "email":"' +localStorage.email+ '", "institution":"' +localStorage.institution+ '", "phone":"' +localStorage.phone+ '"}}';
-  UIHandle.websocket.send(command);
-  UIHandle.infoWindow.close();
+  ctrl.model.sendMessage(MsgType.REPORT, command);
 
-  ctrl.view.showReport();
 }.bind(this);
 
 this.centerMap = function (){
