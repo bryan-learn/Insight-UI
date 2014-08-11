@@ -129,7 +129,6 @@ this.update = function (now){
         commandCnt++;
       }
 
-      console.log(msg);
       this.sendMessage(MsgType.DATA, JSON.stringify(msg));
 
     }
@@ -479,7 +478,6 @@ this.setModalContent = function(htmlStr){
 
 // Toggle the modal box's visiblity
 this.showModal = function(show) {
-console.log(show);
   if(show == true){
     $('#modal').css('display', 'block');
   }else if(show == false){
