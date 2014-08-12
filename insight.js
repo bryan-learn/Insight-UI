@@ -56,7 +56,7 @@ DataContainer = {
 // Message Types
 MsgType = {
   DATA: 1,
-  REPORT: 1
+  REPORT: 2
 };
 
 /* Location
@@ -219,8 +219,8 @@ this.getMessage = function (dataStr){
       case MsgType.REPORT:
         if(json.result == "success"){ // success - show report
           ctrl.view.showReport();
-        }else if(json.result == "error"){ // failed - try to resend
-          ctrl.view.report();
+        }else if(json.result == "failure"){ // failed - try to resend
+          ctrl.view.reportFail();
         }
         break;
     }
@@ -567,6 +567,20 @@ this.showReport = function() {
     + '<br>Phone Number: '+localStorage.phone
     + '<br><h2>Connection Information</h2>'
     + '<br>CID: '+localStorage.cid
+
+  this.setModalContent(htmlStr);
+  this.showModal(true);
+}.bind(this);
+
+// Displays report error Details
+this.reportFail = function(){
+  // Add exit button
+  htmlStr = ' <a href="#" class=".close" onclick="ctrl.view.showModal(false)">&#10006</a> ';
+  // Display report content
+  htmlStr += '<h1>Failed to Send Report</h1>'
+    + 'There was a problem connecting to the database.<br>'
+    + '<input type="button" value="Resend" onclick="ctrl.view.report(); ctrl.view.showModal(false)"/>'
+    + '<input type="button" value="Cancel" onclick="ctrl.view.showModal(false)"/>';
 
   this.setModalContent(htmlStr);
   this.showModal(true);
