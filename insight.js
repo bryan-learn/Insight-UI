@@ -124,8 +124,8 @@ this.update = function (now){
         msg[commandCnt.toString()] = [{"command": "include", "options": $('#include-list').val(), "mask": "1249E104,0,0,0,0"}];
         commandCnt++;
       }
-      if( $('#filter-ipfilter').prop('checked') === true ){
-        msg[commandCnt.toString()] = [{"command": "ipfilter", "options": $('#ipfilter-list').val(), "mask": "1249E104,0,0,0,0"}];
+      if( $('#filter-filterip').prop('checked') === true ){
+        msg[commandCnt.toString()] = [{"command": "filterip", "options": $('#filterip-list').val(), "mask": "1249E104,0,0,0,0"}];
         commandCnt++;
       }
 
