@@ -416,7 +416,9 @@ this.mapBounds = function (){
 this.writeFlowDetails = function (){
   // If a flow is selected
   if(this.selectedFlow != null){
-    var contentStr = '';
+    var contentStr = "cid:" + this.selectedFlow.cid;
+
+    // Iterate over each property of the Flow object.
     $.each(this.selectedFlow, function(key, val){
       if(key == 'tuple'){
         $.each(val, function(k,v){
@@ -425,7 +427,7 @@ this.writeFlowDetails = function (){
           }
         });
       }
-      if( typeof val === 'number' || typeof val === 'string' ){
+      if( (typeof val === 'number' || typeof val === 'string') && key != 'cid' ){
         contentStr += "<br>"+key+": "+val;
       }
     });
@@ -440,8 +442,7 @@ this.writeFlowDetails = function (){
 }.bind(this);
 
 this.setConnectionStatus = function (str){
-  var panel = document.getElementById('con-stat');
-        panel.innerHTML = str;
+  $('#con-stat').html(str);
 };
 
 /* Converts dataObject's Location object to Google API's LatLng object */
@@ -485,7 +486,7 @@ this.showModal = function(show) {
   }
 };
 
-// Pull values from each contact-info-form field and stores into structure
+// Pulls values from each contact-info-form field into persistent storage (html5 localStorage)
 this.getContactInfo = function() {
   localStorage.fname = $('#fname').val(); 
   localStorage.lname = $('#lname').val(); 
