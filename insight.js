@@ -59,6 +59,8 @@ MsgType = {
   REPORT: 2
 };
 
+var mask = '1249E104,0,0,0,0';
+
 /* Location
  * Object holding a Lattitude, Longitude ordered pair 
  */
@@ -113,21 +115,23 @@ this.update = function (now){
       var commandCnt = 1;
 
       // default command: list all connections with given mask
-      msg['1'] = [{"command": "list", "mask": "1249E104,0,0,0,0"}];
+      msg['1'] = [{"command": "list"}];
 
       //check for filters to be applied - overwrite default if any filters are applied.
       if( $('#filter-exclude').prop('checked') === true ){
-        msg[commandCnt.toString()] = [{"command": "exclude", "options": $('#exclude-list').val(), "mask": "1249E104,0,0,0,0"}];
+        msg[commandCnt.toString()] = [{"command": "exclude", "options": $('#exclude-list').val()}];
         commandCnt++;
       }
       if( $('#filter-include').prop('checked') === true ){
-        msg[commandCnt.toString()] = [{"command": "include", "options": $('#include-list').val(), "mask": "1249E104,0,0,0,0"}];
+        msg[commandCnt.toString()] = [{"command": "include", "options": $('#include-list').val()}];
         commandCnt++;
       }
       if( $('#filter-filterip').prop('checked') === true ){
-        msg[commandCnt.toString()] = [{"command": "filterip", "options": $('#filterip-list').val(), "mask": "1249E104,0,0,0,0"}];
+        msg[commandCnt.toString()] = [{"command": "filterip", "options": $('#filterip-list').val()}];
         commandCnt++;
       }
+
+      msg[commandCnt.toString()] = [{"mask": mask.toString()}];
 
       this.sendMessage(MsgType.DATA, JSON.stringify(msg));
 
