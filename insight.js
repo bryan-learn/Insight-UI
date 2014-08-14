@@ -103,7 +103,7 @@ this.Flow = {
 
 /* Data Processing Routines */
 this.last = 0;
-this.ups = 0.5; // Updates Per Second : (0.5 -> once every 2 seconds) 
+this.ups = 1; // Updates Per Second : (0.5 -> once every 2 seconds) 
 this.update = function (now){
   var dt = now-this.last; // Find delta between update calls
   if( dt >= 1000/this.ups ){ // Update if delta is large enough
