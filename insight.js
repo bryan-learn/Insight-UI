@@ -144,9 +144,7 @@ this.update = function (now){
     }
 
     // Update Connection Details panel
-    if(ctrl.view.selectedFlow != null){
-      ctrl.view.writeFlowDetails();
-    }
+    ctrl.view.writeFlowDetails();
 
     // Update Contact Info panel
     ctrl.view.refreshContactInfo();
