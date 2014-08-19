@@ -27,7 +27,7 @@
         <h2>Filter Options</h2>
 
         <input type="checkbox" id="filter-exclude" value="exclude" checked />Exclude Ports:
-        <input type="text" id="exclude-list" value="80, 8080"><br>
+        <input type="text" id="exclude-list" value="80, 443"><br>
 
         <input type="checkbox" id="filter-include" value="include" />Include Ports:
         <input type="text" id="include-list"><br>
@@ -45,8 +45,9 @@
         <input type="button" value="Edit" onclick="ctrl.view.editContactInfo()">
         <input type="button" value="Send Report" style="align-right" onclick="ctrl.view.report()">
       </div>
-      <div id="con-field" class="info">
-        <h2>Connection Details</h2>
+      <div class="info" style="height: 45%">
+        <div><h2>Connection Details</h2></div>
+        <div id="con-field" class="info" style="height: 85%; overflow-y: scroll"></div>
       </div>
     </div>
   </div>

@@ -1,3 +1,11 @@
+var debug = true;
+var flowStats = new Array();
+var dbFunc = function(){
+  if(ctrl.view.selectedFlow != null){
+    var flow = ctrl.view.selectedFlow;
+    flowStats.push(flow);
+  }
+}
 var lastBlob; // DEBUG
 // Set cross-browser animation frame function
 var requestAnimFrame = window.requestAnimationFrame ||
@@ -59,7 +67,7 @@ MsgType = {
   REPORT: 2
 };
 
-var mask = '1249E104,0,0,0,0';
+var mask = '1259E104,0,0,0,0';
 
 /* Location
  * Object holding a Lattitude, Longitude ordered pair 
@@ -134,7 +142,6 @@ this.update = function (now){
       msg[commandCnt.toString()] = [{"mask": mask.toString()}];
 
       this.sendMessage(MsgType.DATA, JSON.stringify(msg));
-
     }
 
     // Update selectedFlow if exists
@@ -148,6 +155,11 @@ this.update = function (now){
 
     // Update Contact Info panel
     ctrl.view.refreshContactInfo();
+
+    //Debug function
+    if(debug == true){
+      dbFunc();
+    }
   }
   requestAnimFrame(this.update);
 }.bind(this);
@@ -339,6 +351,22 @@ this.createUIElem = function (flow, multi){
     zIndex: 1
   });
 
+/*if(ctrl.view.selectedFlow != null){
+    if(ctrl.view.selectedFlow.cid == flow.cid){
+      // Create path connection host and flow endpoint
+      UIHandle.paths["selected"] = curved_line_generate({
+        path: [UIHandle.host, endpoint],
+            strokeOpacity: '0.9',
+        icons: [{icon: packetSym, offset: '0', repeat: this.mapSymDensity( Math.random() )}],
+        strokeColor: 'yellow',
+        strokeWeight: this.mapPathWidth()+1,
+        multiplier: (Math.log(multi+1)),
+        map: UIHandle.map,
+        zIndex: 3
+      });
+    }
+  }
+*/
   // Create path connection host and flow endpoint
   UIHandle.paths[flow.getID()] = curved_line_generate({
     path: [UIHandle.host, endpoint],
@@ -435,11 +463,10 @@ this.writeFlowDetails = function (){
     });
   
     $('#con-field').empty();
-    $('#con-field').append("<h2>Connection Details</h2>"+contentStr);
+    $('#con-field').append(contentStr);
   }
   else{
     $('#con-field').empty();
-    $('#con-field').append("<h2>Connection Details</h2>");
   }
 }.bind(this);
 
