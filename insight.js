@@ -20,6 +20,7 @@ window.addEventListener('unload', function(event){UIHandle.websocket.close();} )
 
 /* Data Container: Holds all of the flow data.
  * list: Array of Flows. Do not modify directly - use functions 'add', 'update', & 'remove' instead.
+ * prevTable: Table to storage previous value of important tcp metrics. Cid is the key.
  * add(Flow flow): Adds a flow to list.
  * update(String flowID, Flow newFlow): Overwrites the flow identified by flowID with newFlow.
  * remove(String flowID): Deletes the corresponding flow from list.
@@ -27,6 +28,8 @@ window.addEventListener('unload', function(event){UIHandle.websocket.close();} )
  * */
 DataContainer = {
   list: new Array(),
+
+  prevTable: new Object(),
 
   // Adds a Flow to DataContainer
   add: function (flow){
@@ -58,8 +61,48 @@ DataContainer = {
     else{
       return null;
     }
+  },
+
+  // Adds entry to prevTable
+  setTableVal: function(key,name,val) {
+    // create new object if key is not found
+    if(this.prevTable[key] == undefined){
+        this.prevTable[key] = new Object();
+    }
+    // set the property value
+    this.prevTable[key][name] = val;
+  },
+
+  // Returns value of key,name pair
+  getTableVal: function(key,name) {
+      if(this.prevTable[key] == undefined || this.prevTable[key][name] == undefined){
+          return null;
+      }
+      else{
+          return this.prevTable[key][name];
+      }
+  },
+
+  // Removes all entries that do not have a corresponding cid in list
+  cleanPrevTable: function() {
+    console.log('nothing here yet!');
   }
 };
+
+// Copies important metrics to prevTable for all flows in list
+populatePrevTable = function() {
+  $.each(DataContainer.list, function(i, v){
+    //octets out
+    if(v.DataOctetsOut != undefined){
+      DataContainer.setTableVal(v.cid, 'DataOctetsOut', v.DataOctetsOut);
+    }
+    //octets in
+    if(v.DataOctetsIn != undefined){
+      DataContainer.setTableVal(v.cid, 'DataOctetsIn', v.DataOctetsIn);
+    }
+
+  });
+}
 
 // Message Types
 MsgType = {
@@ -75,6 +118,11 @@ var mask = '1259E104,0,0,0,0';
 Location = function (lat, lng){
   this.lat = lat;
   this.lng = lng;
+};
+
+// Returns log base 10 of input value
+log10 = function(x) {
+  return Math.log(x)/Math.log(10);
 };
 
 /* ========== Model ========== 
@@ -168,7 +216,10 @@ this.update = function (now){
  * Replaces old data set (DataContainer.list) with newFlows.
  */
 this.processNewData = function (newFlows){
-  // Remove old UI elements
+  //Update prevTable before removing data
+  populatePrevTable();
+
+  // Remove old UI elements and store some metrics
   for(var i=0; i<DataContainer.list.length; i++){
           ctrl.view.removeUIElem(DataContainer.list[i]);
   }
@@ -372,7 +423,7 @@ this.createUIElem = function (flow, multi){
     path: [UIHandle.host, endpoint],
         strokeOpacity: '0.9',
     icons: [{icon: packetSym, offset: '0', repeat: this.mapSymDensity( Math.random() )}],
-    strokeColor: this.mapPathColor( Math.random() /*(flow.octsOut-flow.octsAcked)/flow.octOut*/ ),
+    strokeColor: this.mapPathColor( flow ),
     strokeWeight: this.mapPathWidth(),
     multiplier: (Math.log(multi+1)),
     map: UIHandle.map,
@@ -398,10 +449,28 @@ this.removeUIElem = function (flow){
 };
 
 // Data to Graphics mapping functions
-this.mapPathColor = function (val){
-  if(val < 0.33){  return '#66CCFF'; /* 'Good' : light blue */ }
-  else if(val >= 0.33 & val < 0.66){return '#9933FF'; /* 'Okay' : light purple */ }
-  else if(val >= 0.66){return '#660066'; /* 'Bad' : dark purple */ }
+this.mapPathColor = function (flow){
+  var deltaIn = null;
+  var deltaOut = null;
+  if( DataContainer.getTableVal(flow.cid, 'DataOctetsOut') != undefined ){
+    deltaOut = flow.DataOctetsOut - DataContainer.getTableVal(flow.cid, 'DataOctetsOut');
+  }if( DataContainer.getTableVal(flow.cid, 'DataOctetsIn') != undefined ){
+    deltaIn = flow.DataOctetsIn - DataContainer.getTableVal(flow.cid, 'DataOctetsIn');
+  }
+
+  var val = (deltaOut+deltaIn)*8; // # of bits
+  val = log10(val); // get base 10 exponent
+
+  // check if value is finite
+  if( !isFinite(val) ){
+    val = 0; //if not, set to 0 (input value was likely 0)
+  }
+
+  //console.log( flow.cid +': '+ val );
+  if( val < 3 ){  return '#CC0000'; /* less than 1 Kbps : dark red */ }
+  else if( val >= 3 & val < 6 ){return '#FFFD80'; /* between 1 kbps & 1 Mbps : light yellow */ }
+  else if( val >= 6 & val < 9 ){return '#93FF80'; /* between 1 Mbps & 1 Gbps : light green */ }
+  else if( val >= 9 ){return '#0011FF'; /* greater than 1 Gbps : dark blue*/ }
 };
 
 this.mapPathWidth = function (val){
