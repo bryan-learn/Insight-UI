@@ -57,7 +57,9 @@ h2 {
 }
 #legend {
   padding:3px;
-  background-color: #F0F0FF
+  background-color: #F7F7F7;
+  width: 100px;
+  height: 25px;
 }
 .hidden {
   display: none;
@@ -103,4 +105,8 @@ h2 {
   -webkit-box-shadow:0px 0px 2px 0px #666;
   text-indent:1px;
   font-weight:bold;
+}
+
+rect {
+  fill: url(#lingrad);
 }

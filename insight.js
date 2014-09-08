@@ -368,6 +368,8 @@ this.pathClickEvent = function (e, flow){
 
   localStorage.cid = flow.cid; // Copy flow reference to report
 
+  localStorage.persist = 0; // TODO change to read from UI setting (UI element needs added)
+  localStorage.interval = 0; // TODO change to read from UI setting (UI element needs added)
 }.bind(this);
 
 /* Map initialization function */
@@ -383,9 +385,18 @@ this.mapInit = function () {
   // Create legend
   var legend = document.getElementById('legend');
   var div = document.createElement('div');
-  div.innerHTML = '<fieldset><legend>Legend</legend>value1<br>value2<br>value3<br></fieldset>';
+  div.innerHTML = '<svg width="100%" height="100%" version="1.1" xmlns="http://www.w3.org/2000/svg">'
+    +'<defs><linearGradient id="lingrad">'
+    +'<stop offset="0%" stop-color='+hslToRgb(0,1,.5)+'></stop>'
+    +'<stop offset="25%" stop-color='+hslToRgb(.25,1,.5)+'></stop>'
+    +'<stop offset="50%" stop-color='+hslToRgb(.5,1,.5)+'></stop>'
+    +'<stop offset="75%" stop-color='+hslToRgb(.75,1,.5)+'></stop>'
+    +'<stop offset="100%" stop-color='+hslToRgb(.91,1,.5)+'></stop>'
+    +'</linearGradient></defs>'
+    +'<rect width="100" height="10"/></svg>';
+  //div.innerHTML = '<fieldset><legend>Legend</legend>value1<br>value2<br>value3<br></fieldset>';
   legend.appendChild(div);
-  UIHandle.map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(document.getElementById('legend'));
+  UIHandle.map.controls[google.maps.ControlPosition.RIGHT_TOP].push(document.getElementById('legend'));
 
 }// end map initialize
 
@@ -450,6 +461,7 @@ this.removeUIElem = function (flow){
 
 // Data to Graphics mapping functions
 this.mapPathColor = function (flow){
+  var maxVal = 12; // max exponent in the scale (1*10^12) -> 1 Terabit/s
   var deltaIn = null;
   var deltaOut = null;
   if( DataContainer.getTableVal(flow.cid, 'DataOctetsOut') != undefined ){
@@ -459,7 +471,8 @@ this.mapPathColor = function (flow){
   }
 
   var val = (deltaOut+deltaIn)*8; // # of bits
-  val = log10(val); // get base 10 exponent
+  val = log10(val); // get base 10 exponent [val: 3 -> 1x10^3 -> 1 Kbps]
+  val = val/maxVal; // map to range [0, maxVal]
 
   // check if value is finite
   if( !isFinite(val) ){
@@ -467,10 +480,8 @@ this.mapPathColor = function (flow){
   }
 
   //console.log( flow.cid +': '+ val );
-  if( val < 3 ){  return '#CC0000'; /* less than 1 Kbps : dark red */ }
-  else if( val >= 3 & val < 6 ){return '#FFFD80'; /* between 1 kbps & 1 Mbps : light yellow */ }
-  else if( val >= 6 & val < 9 ){return '#93FF80'; /* between 1 Mbps & 1 Gbps : light green */ }
-  else if( val >= 9 ){return '#0011FF'; /* greater than 1 Gbps : dark blue*/ }
+
+  return hslToRgb(val, 1, 0.5);
 };
 
 this.mapPathWidth = function (val){
@@ -493,8 +504,9 @@ this.mapSymDensity = function (val){
 
 
 this.report = function (){
-  var command = '{"command":"report", "options":{"cid": ' +localStorage.cid + ', "uri":"' +localStorage.uri+ '", "port":' +localStorage.port+ ', "db":"' +localStorage.db+ '", "dbname":"' +localStorage.dbname+ '", "dbpass":"' +localStorage.dbpass+ '", "nocemail":"' +localStorage.nocemail+ '", "fname":"' +localStorage.fname+ '", "lname":"' +localStorage.lname+ '", "email":"' +localStorage.email+ '", "institution":"' +localStorage.institution+ '", "phone":"' +localStorage.phone+ '"}}';
+  var command = '{"command":"report", "options":{"cid": ' +localStorage.cid + ', "persist": '+localStorage.persist+ ', "interval": '+localStorage.interval+', "uri":"' +localStorage.uri+ '", "port":' +localStorage.port+ ', "db":"' +localStorage.db+ '", "dbname":"' +localStorage.dbname+ '", "dbpass":"' +localStorage.dbpass+ '", "nocemail":"' +localStorage.nocemail+ '", "fname":"' +localStorage.fname+ '", "lname":"' +localStorage.lname+ '", "email":"' +localStorage.email+ '", "institution":"' +localStorage.institution+ '", "phone":"' +localStorage.phone+ '"}}';
   ctrl.model.sendMessage(MsgType.REPORT, command);
+  console.log("Report JSON: "+ command);
 
 }.bind(this);
 
@@ -685,7 +697,38 @@ this.reportFail = function(){
   this.showModal(true);
 }.bind(this);
 
+
+
 }// end View
+
+// Convers an HSL color value to RGB.
+// Assumes h, s, l are within the set [0,1]
+// returns r, g, b in the set [0, 255]
+function hslToRgb(h, s, l){
+  var r, g, b;
+
+  if(s == 0){
+    r = g = b = l; // achromatic
+  }
+  else{
+    function hue2rgb(p, q, t){
+      if(t < 0) t += 1;
+      if(t > 1) t -= 1;
+      if(t < 1/6) return p + (q - p) * 6 * t;
+      if(t < 1/2) return q;
+      if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    }
+    
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    var p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  
+  return 'rgb('+ Math.round(r * 255) +','+ Math.round(g * 255) +','+ Math.round(b * 255) +')';
+}
 
 /* ========== Controller ==========
  * Sends commands to Model to change it's state.
