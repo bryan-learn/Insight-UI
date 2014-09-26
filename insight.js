@@ -100,6 +100,13 @@ populatePrevTable = function() {
     if(v.DataOctetsIn != undefined){
       DataContainer.setTableVal(v.cid, 'DataOctetsIn', v.DataOctetsIn);
     }
+    //retransmits
+    if(v.SndLimTransRwin != undefined){
+      DataContainer.setTableVal(v.cid, 'SndLimTransRwin', v.SndLimTransRwin);
+    }
+    //duplicate acks
+    
+    //out of order packets
 
   });
 }
@@ -110,7 +117,7 @@ MsgType = {
   REPORT: 2
 };
 
-var mask = '1259E104,0,0,0,0';
+var mask = '1259E104,A00000,10000,0,0,0';
 
 /* Location
  * Object holding a Lattitude, Longitude ordered pair 
@@ -323,7 +330,8 @@ UIHandle = {
   removeMarker: function(id){
     delete this.markers[id];
   },
-  websocket: null
+  websocket: null,
+  infoWindow: new google.maps.InfoWindow()
 
 };
 
@@ -353,9 +361,9 @@ lineSym = {
 
 packetSym = {
   path: 'M0,0 L2,2 M2,0 L0,2 M0,0 z', 
-  fillColor: 'black',
+  fillColor: '#FF0000',
   fillOpacity: 1,
-  strokeColor: 'black',
+  strokeColor: '#FF0000',
   scale: 1.5,
   strokeWidth: 1,
   anchor: new google.maps.Point(1,1)
@@ -372,6 +380,14 @@ this.pathClickEvent = function (e, flow){
   localStorage.interval = 0; // TODO change to read from UI setting (UI element needs added)
 }.bind(this);
 
+this.nodeClickEvent = function (e, loc, ip){
+  UIHandle.infoWindow.setContent('Add '+ip+' to filter list?<br><input type="button" value="yes" onclick="filteripAppend(\''+ip+'\');UIHandle.infoWindow.close()"/>');
+  UIHandle.infoWindow.setPosition(loc);
+  UIHandle.infoWindow.open(UIHandle.map);
+//  console.log(loc);
+  console.log(ip);
+}.bind(this);
+
 /* Map initialization function */
 this.mapInit = function () {
   UIHandle.host = new google.maps.LatLng(40.4439, -79.9561); //defaut center before data is received
@@ -383,20 +399,11 @@ this.mapInit = function () {
   UIHandle.map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 
   // Create legend
-  var legend = document.getElementById('legend');
-  var div = document.createElement('div');
-  div.innerHTML = '<svg width="100%" height="100%" version="1.1" xmlns="http://www.w3.org/2000/svg">'
-    +'<defs><linearGradient id="lingrad">'
-    +'<stop offset="0%" stop-color='+hslToRgb(0,1,.5)+'></stop>'
-    +'<stop offset="25%" stop-color='+hslToRgb(.25,1,.5)+'></stop>'
-    +'<stop offset="50%" stop-color='+hslToRgb(.5,1,.5)+'></stop>'
-    +'<stop offset="75%" stop-color='+hslToRgb(.75,1,.5)+'></stop>'
-    +'<stop offset="100%" stop-color='+hslToRgb(.91,1,.5)+'></stop>'
-    +'</linearGradient></defs>'
-    +'<rect width="100" height="10"/></svg>';
+  //var legend = document.getElementById('legend');
+  //var div = document.createElement('div');
   //div.innerHTML = '<fieldset><legend>Legend</legend>value1<br>value2<br>value3<br></fieldset>';
-  legend.appendChild(div);
-  UIHandle.map.controls[google.maps.ControlPosition.RIGHT_TOP].push(document.getElementById('legend'));
+  //legend.appendChild(div);
+  //UIHandle.map.controls[google.maps.ControlPosition.RIGHT_TOP].push(document.getElementById('legend'));
 
 }// end map initialize
 
@@ -413,38 +420,28 @@ this.createUIElem = function (flow, multi){
     zIndex: 1
   });
 
-/*if(ctrl.view.selectedFlow != null){
-    if(ctrl.view.selectedFlow.cid == flow.cid){
-      // Create path connection host and flow endpoint
-      UIHandle.paths["selected"] = curved_line_generate({
-        path: [UIHandle.host, endpoint],
-            strokeOpacity: '0.9',
-        icons: [{icon: packetSym, offset: '0', repeat: this.mapSymDensity( Math.random() )}],
-        strokeColor: 'yellow',
-        strokeWeight: this.mapPathWidth()+1,
-        multiplier: (Math.log(multi+1)),
-        map: UIHandle.map,
-        zIndex: 3
-      });
-    }
-  }
-*/
   // Create path connection host and flow endpoint
   UIHandle.paths[flow.getID()] = curved_line_generate({
     path: [UIHandle.host, endpoint],
-        strokeOpacity: '0.9',
-    icons: [{icon: packetSym, offset: '0', repeat: this.mapSymDensity( Math.random() )}],
+    strokeOpacity: '0.9',
+    icons: [{icon: packetSym, offset: '0', repeat: this.mapSymDensity( flow )}],
     strokeColor: this.mapPathColor( flow ),
-    strokeWeight: this.mapPathWidth(),
+    strokeWeight: this.mapPathWidth( flow ),
     multiplier: (Math.log(multi+1)),
     map: UIHandle.map,
     zIndex: 3
   });
 
-  // Add event listner to path
+  // Add event listener to path
   google.maps.event.addListener(UIHandle.paths[flow.getID()], 'click', function(event){
     this.pathClickEvent(event, flow);
   }.bind(this));
+
+  // Add event listener to destination marker 
+  google.maps.event.addListener(UIHandle.markers[flow.getID()], 'click', function(event){
+    this.nodeClickEvent(event, endpoint, flow.tuple.DestIP);
+  }.bind(this));
+
 
   flow.drawn = true;
 }.bind(this);
@@ -461,45 +458,43 @@ this.removeUIElem = function (flow){
 
 // Data to Graphics mapping functions
 this.mapPathColor = function (flow){
+  return '#000000';
+};
+
+this.mapPathWidth = function (flow){
   var maxVal = 12; // max exponent in the scale (1*10^12) -> 1 Terabit/s
   var deltaIn = null;
   var deltaOut = null;
-  if( DataContainer.getTableVal(flow.cid, 'DataOctetsOut') != undefined ){
+  if( DataContainer.getTableVal(flow.cid, 'DataOctetsOut') != undefined && flow.DataOctetsOut != undefined){ //estimate outbound throughput
     deltaOut = flow.DataOctetsOut - DataContainer.getTableVal(flow.cid, 'DataOctetsOut');
-  }if( DataContainer.getTableVal(flow.cid, 'DataOctetsIn') != undefined ){
+  }if( DataContainer.getTableVal(flow.cid, 'DataOctetsIn') != undefined ){ //estimate inbound throughput
     deltaIn = flow.DataOctetsIn - DataContainer.getTableVal(flow.cid, 'DataOctetsIn');
   }
-
+  
   var val = (deltaOut+deltaIn)*8; // # of bits
   val = log10(val); // get base 10 exponent [val: 3 -> 1x10^3 -> 1 Kbps]
-  val = val/maxVal; // map to range [0, maxVal]
 
-  // check if value is finite
-  if( !isFinite(val) ){
-    val = 0; //if not, set to 0 (input value was likely 0)
+  // check if value is valid for display (is finite and not too small)
+  if( !isFinite(val) || val < 2){
+    val = 2; //lines thiner than 2px are too hard to see
   }
 
-  //console.log( flow.cid +': '+ val );
-
-  return hslToRgb(val, 1, 0.5);
-};
-
-this.mapPathWidth = function (val){
-  return 3;
+  return val;
 };
 
 this.mapSymColor = function (val){
-  return '#000000';
+  return '#FF0000';
 };
 
 this.mapSymScale = function (val){
   return 1.5;
 };
 
-this.mapSymDensity = function (val){
-  if(val < 0.33){ return '50px'; }
-  else if(val >= 0.33 && val < 0.66){ return '20px';}
-  else if(val >= 0.66){ return '10px';}
+this.mapSymDensity = function (flow){
+  maxVal = 200; //max number of pixels between symbols
+  val = (flow.SndLimTransRwin + flow.DupAcksIn)/flow.DataOctetsOut; //"badness" ratio: # errors to amount of data out
+  val = (1-val)*maxVal; //map "badness" value to screen values 
+  return val+'px';
 };
 
 
@@ -511,7 +506,7 @@ this.report = function (){
 }.bind(this);
 
 this.centerMap = function (){
-  map.fitBounds(mapBounds());
+  UIHandle.map.fitBounds(ctrl.view.mapBounds());
 };
 
 this.mapBounds = function (){
@@ -729,6 +724,12 @@ function hslToRgb(h, s, l){
   
   return 'rgb('+ Math.round(r * 255) +','+ Math.round(g * 255) +','+ Math.round(b * 255) +')';
 }
+
+//Functions for filtering
+
+filteripAppend = function(v){
+  $('#filterip-list').val( $('#filterip-list').val() +', '+ v );
+};
 
 /* ========== Controller ==========
  * Sends commands to Model to change it's state.
