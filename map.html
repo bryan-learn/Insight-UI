@@ -22,32 +22,42 @@
     <h1>Insight</h1>
     <div id="map-canvas"></div>
     <div id="info-canvas">
-      <div id="con-stat" class="info"></div>
-      <div id="filter-field" class="info">
-        <h2>Filter Options</h2>
-
-        <input type="checkbox" id="filter-exclude" value="exclude" checked />Exclude Ports:
-        <input type="text" id="exclude-list" value="80, 443"><br>
-
-        <input type="checkbox" id="filter-include" value="include" />Include Ports:
-        <input type="text" id="include-list"><br>
-
-        <input type="checkbox" id="filter-filterip" value="filterip" />Include IPs:
-        <input type="text" id="filterip-list"><br>
-
+      <div id="con-stat-header" class="info-header">
+        <div id="con-stat" class="info"></div>
       </div>
-      <div id="contact-info" class="info"><h2>Contact Information</h2>
-        <label>First Name:<input type="text" id="usr-fname" readonly="true"></label><br>
-        <label>Last Name:<input type="text" id="usr-lname" readonly="true"></label><br>
-        <label>Email:<input type="email" id="usr-email" readonly="true"></label><br>
-        <label>Institution:<input type="text" id="usr-institution" readonly="true"></label><br>
-        <label>Phone:<input type="tel" id="usr-phone" readonly="true"></label><br>
-        <input type="button" value="Edit" onclick="ctrl.view.editContactInfo()">
-        <input type="button" value="Send Report" style="align-right" onclick="ctrl.view.report()">
+      <div id="filter-field-header" class="info-header">
+        <a href="#" class=".close" onclick="toggleCollapse(this)">+</a><h2>Filter Options</h2>
+        <div id="filter-field" class="info">
+
+          <input type="checkbox" id="filter-exclude" value="exclude" />Exclude Ports:
+          <input type="text" id="exclude-list" value="80, 443" size="10"><br>
+
+          <input type="checkbox" id="filter-include" value="include" />Include Ports:
+          <input type="text" id="include-list" size="10"><br>
+
+          <input type="checkbox" id="filter-filterip" value="filterip" />Include IPs:
+          <input type="text" id="filterip-list" size="10"><br>
+
+          <input type="checkbox" id="filter-filterapp" value="filterapp" />Include Apps:
+          <input type="text" id="filterapp-list" size="10"><br>
+
+        </div>
       </div>
-      <div class="info" style="height: 45%">
-        <div><h2>Connection Details</h2></div>
-        <div id="con-field" class="info" style="height: 85%; overflow-y: scroll"></div>
+      <div id="contact-info-header" class="info-header">
+        <a href="#" class=".close" onclick="toggleCollapse(this)">+</a><h2>Contact Information</h2>
+        <div id="contact-info" class="info">
+          <label>First Name:<input type="text" id="usr-fname" readonly="true"></label><br>
+          <label>Last Name:<input type="text" id="usr-lname" readonly="true"></label><br>
+          <label>Email:<input type="email" id="usr-email" readonly="true"></label><br>
+          <label>Institution:<input type="text" id="usr-institution" readonly="true"></label><br>
+          <label>Phone:<input type="tel" id="usr-phone" readonly="true"></label><br>
+          <input type="button" value="Edit" onclick="ctrl.view.editContactInfo()">
+          <input type="button" value="Send Report" style="align-right" onclick="ctrl.view.report()">
+        </div>
+      </div>
+      <div class="info-header">
+        <a href="#" class=".close" onclick="toggleCollapse(this)">+</a><h2 id="con-title">Connection Details</h2>
+        <div id="con-field" class="info" style="max-height: 200px; overflow-y: scroll"></div>
       </div>
     </div>
   </div>

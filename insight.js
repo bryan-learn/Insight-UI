@@ -7,6 +7,15 @@ var dbFunc = function(){
   }
 }
 var lastBlob; // DEBUG
+
+var toggleCollapse = function (e){
+  $(e).nextAll("[class='info']").slideToggle('slow');
+};
+/*$('.info-header').click(function(){
+  console.log($(this));
+  $(this).children("[class='info']").slideToggle('slow');
+});*/
+
 // Set cross-browser animation frame function
 var requestAnimFrame = window.requestAnimationFrame ||
   window.webkitRequestAnimationFrame ||
@@ -117,7 +126,7 @@ MsgType = {
   REPORT: 2
 };
 
-var mask = '1259E104,A00000,10000,0,0,0';
+var mask = '125DE104,A00000,F98000,0,0,0';
 
 /* Location
  * Object holding a Lattitude, Longitude ordered pair 
@@ -194,6 +203,10 @@ this.update = function (now){
         commandCnt++;
       }
 
+      if( $('#filter-filterapp').prop('checked') === true ){
+        msg[commandCnt.toString()] = [{"command": "filterapp", "options": $('#filterapp-list').val()}];
+        commandCnt++;
+      }
       msg[commandCnt.toString()] = [{"mask": mask.toString()}];
 
       this.sendMessage(MsgType.DATA, JSON.stringify(msg));
@@ -331,7 +344,7 @@ UIHandle = {
     delete this.markers[id];
   },
   websocket: null,
-  infoWindow: new google.maps.InfoWindow()
+  infoWindow: new google.maps.InfoWindow({maxWidth: 800})
 
 };
 
@@ -370,7 +383,7 @@ packetSym = {
 };
 
 /* Event handlers */
-this.pathClickEvent = function (e, flow){
+this.pathClickEvent = function (e, flow, loc){
 
   this.selectedFlow = flow;
 
@@ -378,6 +391,20 @@ this.pathClickEvent = function (e, flow){
 
   localStorage.persist = 0; // TODO change to read from UI setting (UI element needs added)
   localStorage.interval = 0; // TODO change to read from UI setting (UI element needs added)
+
+  /* pop-up to add path characteristics to filter */
+  //content string for filter options table
+  var contentStr = '<table border=0><tr><th>Filter</th><th>Value</th><th>Add</th><th>Remove</th></tr>';
+  contentStr += '<tr><td>Exclude Port</td><td>'+flow.tuple.DestPort+'</td><td> <input type="button" value="add" onclick="filterportexAppend(\''+flow.tuple.DestPort+'\');"/> </td><td> <input type="button" value="remove" onclick="filterportexAppend(\''+flow.tuple.DestPort+'\');"/> </td></tr>';
+  contentStr += '<tr><td>Include Port</td><td>'+flow.tuple.DestPort+'</td><td> <input type="button" value="add" onclick="filterportinAppend(\''+flow.tuple.DestPort+'\');"/> </td><td> <input type="button" value="remove" onclick="filterportinAppend(\''+flow.tuple.DestPort+'\');"/> </td></tr>';
+  contentStr += '<tr><td>Include IP</td><td>'+flow.tuple.DestIP+'</td><td> <input type="button" value="add" onclick="filteripAppend(\''+flow.tuple.DestIP+'\');"/> </td><td> <input type="button" value="remove" onclick="filteripAppend(\''+flow.tuple.DestIP+'\');"/> </td></tr>';
+  contentStr += '<tr><td>Include App</td><td>'+flow.tuple.Application+'</td><td> <input type="button" value="add" onclick="filterappAppend(\''+flow.tuple.Application+'\');"/> </td><td> <input type="button" value="remove" onclick="filterappAppend(\''+flow.tuple.Application+'\');"/> </td></tr>';
+  
+  //UIHandle.infoWindow.setContent('Add '+flow.tuple.DestIP+' to filter list?<br><input type="button" value="yes" onclick="filteripAppend(\''+flow.tuple.DestIP+'\');UIHandle.infoWindow.close()"/>');
+  UIHandle.infoWindow.setContent(contentStr);
+  UIHandle.infoWindow.setPosition(loc);
+  UIHandle.infoWindow.open(UIHandle.map);
+
 }.bind(this);
 
 this.nodeClickEvent = function (e, loc, ip){
@@ -424,7 +451,7 @@ this.createUIElem = function (flow, multi){
   UIHandle.paths[flow.getID()] = curved_line_generate({
     path: [UIHandle.host, endpoint],
     strokeOpacity: '0.9',
-    icons: [{icon: packetSym, offset: '0', repeat: this.mapSymDensity( flow )}],
+    //icons: [{icon: packetSym, offset: '0', repeat: this.mapSymDensity( flow )}],
     strokeColor: this.mapPathColor( flow ),
     strokeWeight: this.mapPathWidth( flow ),
     multiplier: (Math.log(multi+1)),
@@ -434,12 +461,12 @@ this.createUIElem = function (flow, multi){
 
   // Add event listener to path
   google.maps.event.addListener(UIHandle.paths[flow.getID()], 'click', function(event){
-    this.pathClickEvent(event, flow);
+    this.pathClickEvent(event, flow, endpoint);
   }.bind(this));
 
   // Add event listener to destination marker 
   google.maps.event.addListener(UIHandle.markers[flow.getID()], 'click', function(event){
-    this.nodeClickEvent(event, endpoint, flow.tuple.DestIP);
+    //this.nodeClickEvent(event, endpoint, flow.tuple.DestIP);
   }.bind(this));
 
 
@@ -458,7 +485,20 @@ this.removeUIElem = function (flow){
 
 // Data to Graphics mapping functions
 this.mapPathColor = function (flow){
-  return '#000000';
+  maxVal = 255; //max color value (black: good -> red: bad)
+  val = (flow.SndLimTransRwin + flow.DupAcksIn) / (flow.DataOctetsOut); //"badness" ratio: # errors to data out
+  if( flow.InRecovery == 2 ){ //tcpESDataUnordered(2) indicates that the remote receiver is reporting missing or out-of-order data
+    val *= 10;
+  }
+  val = val*maxVal; //map "badness" value to color value range
+  hexVal = Math.floor(val).toString(16); //convert from decimal to hexVal
+  if(val < 16){ //if hex val only has 1 digit
+    hexVal = '0'+hexVal; //pad with leading zero for #RRGGBB format
+  }
+  if(val > maxVal){ //prevent val from exceeding maxVal
+    hexVal = 'FF';
+  }
+  return '#'+hexVal+'0000';
 };
 
 this.mapPathWidth = function (flow){
@@ -522,22 +562,27 @@ this.mapBounds = function (){
 this.writeFlowDetails = function (){
   // If a flow is selected
   if(this.selectedFlow != null){
-    var contentStr = "cid:" + this.selectedFlow.cid;
+    var contentStr = ""; // = "cid:" + this.selectedFlow.cid;
 
     // Iterate over each property of the Flow object.
     $.each(this.selectedFlow, function(key, val){
       if(key == 'tuple'){
         $.each(val, function(k,v){
-          if(typeof v === 'number' || typeof v === 'string'){
+          if( (typeof v === 'number' || typeof v === 'string')  ){
             contentStr += "<br>"+k+": "+v;
           }
         });
       }
-      if( (typeof val === 'number' || typeof val === 'string') && key != 'cid' ){
+      if( (typeof val === 'number' || typeof val === 'string') && (key != 'cid' && key != 'lat' && key != 'long') ){
         contentStr += "<br>"+key+": "+val;
       }
     });
-  
+ 
+    //update title
+    $('#con-title').empty();
+    $('#con-title').append('Connection Details'+' - Cid '+this.selectedFlow.cid);
+
+    //update content
     $('#con-field').empty();
     $('#con-field').append(contentStr);
   }
@@ -727,10 +772,18 @@ function hslToRgb(h, s, l){
 
 //Functions for filtering
 
+filterportexAppend = function(v){
+  $('#exclude-list').val( $('#exclude-list').val() +', '+ v );
+};
+filterportinAppend = function(v){
+  $('#include-list').val( $('#include-list').val() +', '+ v );
+};
 filteripAppend = function(v){
   $('#filterip-list').val( $('#filterip-list').val() +', '+ v );
 };
-
+filterappAppend = function(v){
+  $('#filterapp-list').val( $('#filterapp-list').val() +', '+ v );
+};
 /* ========== Controller ==========
  * Sends commands to Model to change it's state.
  */
@@ -779,3 +832,5 @@ if( localStorage.hasContactInfo != "true"){
 
 // Initialize websocket
 ctrl.websockInit();
+
+
