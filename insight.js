@@ -11,10 +11,6 @@ var lastBlob; // DEBUG
 var toggleCollapse = function (e){
   $(e).nextAll("[class='info']").slideToggle('slow');
 };
-/*$('.info-header').click(function(){
-  console.log($(this));
-  $(this).children("[class='info']").slideToggle('slow');
-});*/
 
 // Set cross-browser animation frame function
 var requestAnimFrame = window.requestAnimationFrame ||
@@ -129,7 +125,7 @@ MsgType = {
 var mask = '125DE104,A00000,F98000,0,0,0';
 
 /* Location
- * Object holding a Lattitude, Longitude ordered pair 
+ * Object holding a Latitude, Longitude ordered pair 
  */
 Location = function (lat, lng){
   this.lat = lat;
@@ -394,7 +390,7 @@ this.pathClickEvent = function (e, flow, loc){
 
   /* pop-up to add path characteristics to filter */
   //content string for filter options table
-  var contentStr = '<table border=0><tr><th>Filter</th><th>Value</th><th>Add</th><th>Remove</th></tr>';
+  var contentStr = '<table border=0><tr><th>Filter</th><th>Value</th><th></th><th></th></tr>';
   contentStr += '<tr><td>Exclude Port</td><td>'+flow.tuple.DestPort+'</td><td> <input type="button" value="add" onclick="filterportexAppend(\''+flow.tuple.DestPort+'\');"/> </td><td> <input type="button" value="remove" onclick="filterportexAppend(\''+flow.tuple.DestPort+'\');"/> </td></tr>';
   contentStr += '<tr><td>Include Port</td><td>'+flow.tuple.DestPort+'</td><td> <input type="button" value="add" onclick="filterportinAppend(\''+flow.tuple.DestPort+'\');"/> </td><td> <input type="button" value="remove" onclick="filterportinAppend(\''+flow.tuple.DestPort+'\');"/> </td></tr>';
   contentStr += '<tr><td>Include IP</td><td>'+flow.tuple.DestIP+'</td><td> <input type="button" value="add" onclick="filteripAppend(\''+flow.tuple.DestIP+'\');"/> </td><td> <input type="button" value="remove" onclick="filteripAppend(\''+flow.tuple.DestIP+'\');"/> </td></tr>';
@@ -417,11 +413,16 @@ this.nodeClickEvent = function (e, loc, ip){
 
 /* Map initialization function */
 this.mapInit = function () {
-  UIHandle.host = new google.maps.LatLng(40.4439, -79.9561); //defaut center before data is received
+  if(UIHandle.host == undefined || UIHandle.host == null){ //if host is not yet set
+    request_location();
+    if(UIHandle.host == undefined || UIHandle.host == null){ //if request_location failed (no browser support for navigator)
+      UIHandle.host = new google.maps.LatLng(40.4439, -79.9561); //defaut center before data is received
+    }
+  }
   // Setup map
   var mapOptions = {
     center: UIHandle.host,
-    zoom: 8
+    zoom: 3
   };
   UIHandle.map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 
@@ -833,4 +834,22 @@ if( localStorage.hasContactInfo != "true"){
 // Initialize websocket
 ctrl.websockInit();
 
-
+// Request geolocation
+function request_location (){
+  navigator.geolocation.getCurrentPosition(
+    function(pos){ //success callback
+      UIHandle.host = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude); //defaut center before data is received
+    },
+    function(err){ //error callback
+      console.log('location request failed - setting to default location'); //TODO replace with better fall-back
+      UIHandle.host = new google.maps.LatLng(40.4439, -79.9561); //defaut center (pgh)
+      
+      if(err.code == 1){
+        console.log('Error: permission denied');
+      }else if(err.code == 2){
+        console.log('Error: position unavailable');
+      }else if(err.code == 3){
+        console.log('Error: position unavailable');
+      }
+    });
+}
