@@ -300,7 +300,7 @@ this.getMessage = function (dataStr){
       case MsgType.REPORT:
         if(json.result == "success"){ // success - show report
           ctrl.view.showReport();
-        }else if(json.result == "failure"){ // failed - try to resend
+        }else if(json.result == "failure"){ // failed - show error
           ctrl.view.reportFail();
         }
         break;
@@ -385,7 +385,7 @@ this.pathClickEvent = function (e, flow, loc){
 
   localStorage.cid = flow.cid; // Copy flow reference to report
 
-  localStorage.persist = 0; // TODO change to read from UI setting (UI element needs added)
+  localStorage.persist = 1; // TODO change to read from UI setting (UI element needs added)
   localStorage.interval = 0; // TODO change to read from UI setting (UI element needs added)
 
   /* pop-up to add path characteristics to filter */
@@ -615,7 +615,7 @@ this.countDestIP = function (ip){
 };
 
 // Database information
-localStorage.uri = 'darksagan.psc.edu';
+localStorage.uri = 'gozer.psc.edu';
 localStorage.port = '3306';
 localStorage.db = 'insight';
 localStorage.dbname = 'insight';
