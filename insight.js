@@ -489,7 +489,7 @@ this.mapPathColor = function (flow){
   maxVal = 255; //max color value (black: good -> red: bad)
   val = (flow.SndLimTransRwin + flow.DupAcksIn) / (flow.DataOctetsOut); //"badness" ratio: # errors to data out
   if( flow.InRecovery == 2 ){ //tcpESDataUnordered(2) indicates that the remote receiver is reporting missing or out-of-order data
-    val *= 10;
+    val *= 2;
   }
   val = val*maxVal; //map "badness" value to color value range
   hexVal = Math.floor(val).toString(16); //convert from decimal to hexVal
@@ -784,60 +784,75 @@ filterlistValToggle = function(cid, filterID){
   switch(filterID){
     case 1: //Exclude Port
       if(checked == true){ //append
-        filterportExAppend( DataContainer.getByCid(cid).tuple.DestPort );
+        filterAppend('#exclude-list', DataContainer.getByCid(cid).tuple.DestPort );
       } else { //remove
-
+        filterRemove('#exclude-list', DataContainer.getByCid(cid).tuple.DestPort );
       }
       break;
     case 2: //Include Port
       if(checked == true){ //append
-        filterportInAppend( DataContainer.getByCid(cid).tuple.DestPort );
+        filterAppend('#include-list', DataContainer.getByCid(cid).tuple.DestPort );
       } else { //remove
-
+        filterRemove('#include-list', DataContainer.getByCid(cid).tuple.DestPort );
       }
       break;
     case 3: //Exclude IP
       if(checked == true){ //append
-        filteripExAppend( DataContainer.getByCid(cid).tuple.DestIP );
+        filterAppend('', DataContainer.getByCid(cid).tuple.DestIP );
       } else { //remove
-
+        filterRemove('', DataContainer.getByCid(cid).tuple.DestIP );
       }
       break;
     case 4: //Include IP
       if(checked == true){ //append
-        filteripInAppend( DataContainer.getByCid(cid).tuple.DestIP );
+        filterAppend('#filterip-list', DataContainer.getByCid(cid).tuple.DestIP );
       } else { //remove
-
+        filterRemove('#filterip-list', DataContainer.getByCid(cid).tuple.DestIP );
       }
       break;
     case 5: //Exclude App
       if(checked == true){ //append
-        filterappExAppend( DataContainer.getByCid(cid).tuple.Application );
+        filterAppend('', DataContainer.getByCid(cid).tuple.Application );
       } else { //remove
-
+        filterRemove('', DataContainer.getByCid(cid).tuple.Application );
       }
       break;
     case 6: //Include App
       if(checked == true){ //append
-        filterappInAppend( DataContainer.getByCid(cid).tuple.Application );
+        filterAppend('#filterapp-list', DataContainer.getByCid(cid).tuple.Application );
       } else { //remove
-
+        filterRemove('#filterapp-list', DataContainer.getByCid(cid).tuple.Application );
       }
       break;
   }
 };
 
-filterportExAppend = function(v){
-  $('#exclude-list').val( $('#exclude-list').val() +', '+ v );
+filterAppend = function(filterID, value){
+  var valArray = $(filterID).val().split(',');
+  var newVals = new Array(); //holds values after cleansing & appending new value
+
+  $.each(valArray, function(i,v){ //remove values that are repeats or empty
+    if(valArray[i] != value && valArray[i] != ''){
+      newVals.push(valArray[i]);
+    }
+  });
+ 
+  newVals.push(value);
+
+  $(filterID).val( newVals.toString() );
 };
-filterportInAppend = function(v){
-  $('#include-list').val( $('#include-list').val() +', '+ v );
-};
-filteripInAppend = function(v){
-  $('#filterip-list').val( $('#filterip-list').val() +', '+ v );
-};
-filterappInAppend = function(v){
-  $('#filterapp-list').val( $('#filterapp-list').val() +', '+ v );
+
+filterRemove = function(filterID, value){
+  var valArray = $(filterID).val().split(',');
+  var newVals = new Array(); //holds values after cleansing & removing value
+
+  $.each(valArray, function(i,v){ //remove values that are repeats or empty
+    if(valArray[i] != value && valArray[i] != ''){
+      newVals.push(valArray[i]);
+    }
+  });
+  
+  $(filterID).val( newVals.toString() );
 };
 
 /* ========== Controller ==========
