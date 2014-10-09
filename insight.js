@@ -563,13 +563,13 @@ this.mapBounds = function (){
 this.writeFlowDetails = function (){
   // If a flow is selected
   if(this.selectedFlow != null){
-    var contentStr = ""; // = "cid:" + this.selectedFlow.cid;
+    var contentStr = 'Application: ' + this.selectedFlow.tuple.Application;
 
     // Iterate over each property of the Flow object.
     $.each(this.selectedFlow, function(key, val){
       if(key == 'tuple'){
         $.each(val, function(k,v){
-          if( (typeof v === 'number' || typeof v === 'string')  ){
+          if( ((typeof v === 'number' || typeof v === 'string') && (k != 'Application')) ){
             contentStr += "<br>"+k+": "+v;
           }
         });
@@ -613,14 +613,6 @@ this.countDestIP = function (ip){
 
   return cnt;
 };
-
-// Database information
-localStorage.uri = 'gozer.psc.edu';
-localStorage.port = '3306';
-localStorage.db = 'insight';
-localStorage.dbname = 'insight';
-localStorage.dbpass = '';
-localStorage.nocemail = 'blearn@psc.edu';
 
 // Set the content to be displayed in the modal box
 this.setModalContent = function(htmlStr){
