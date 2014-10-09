@@ -390,11 +390,11 @@ this.pathClickEvent = function (e, flow, loc){
 
   /* pop-up to add path characteristics to filter */
   //content string for filter options table
-  var contentStr = '<table border=0><tr><th>Filter</th><th>Value</th><th></th><th></th></tr>';
-  contentStr += '<tr><td>Exclude Port</td><td>'+flow.tuple.DestPort+'</td><td> <input type="button" value="add" onclick="filterportexAppend(\''+flow.tuple.DestPort+'\');"/> </td><td> <input type="button" value="remove" onclick="filterportexAppend(\''+flow.tuple.DestPort+'\');"/> </td></tr>';
-  contentStr += '<tr><td>Include Port</td><td>'+flow.tuple.DestPort+'</td><td> <input type="button" value="add" onclick="filterportinAppend(\''+flow.tuple.DestPort+'\');"/> </td><td> <input type="button" value="remove" onclick="filterportinAppend(\''+flow.tuple.DestPort+'\');"/> </td></tr>';
-  contentStr += '<tr><td>Include IP</td><td>'+flow.tuple.DestIP+'</td><td> <input type="button" value="add" onclick="filteripAppend(\''+flow.tuple.DestIP+'\');"/> </td><td> <input type="button" value="remove" onclick="filteripAppend(\''+flow.tuple.DestIP+'\');"/> </td></tr>';
-  contentStr += '<tr><td>Include App</td><td>'+flow.tuple.Application+'</td><td> <input type="button" value="add" onclick="filterappAppend(\''+flow.tuple.Application+'\');"/> </td><td> <input type="button" value="remove" onclick="filterappAppend(\''+flow.tuple.Application+'\');"/> </td></tr>';
+  var contentStr = '<table border=0><tr><th>Filter</th><th>Value</th><th>Add/Remove</th></tr>';
+  contentStr += '<tr><td>Exclude Port</td><td>'+flow.tuple.DestPort+'</td><td> <input id="chkbx-'+flow.cid+'-'+1+'" type="checkbox" onclick="filterlistValToggle(\''+flow.cid+'\','+1+')"/> </td></tr>';
+  contentStr += '<tr><td>Include Port</td><td>'+flow.tuple.DestPort+'</td><td> <input id="chkbx-'+flow.cid+'-'+2+'" type="checkbox" onclick="filterlistValToggle(\''+flow.cid+'\','+2+');"/> </td></tr>';
+  contentStr += '<tr><td>Include IP</td><td>'+flow.tuple.DestIP+'</td><td> <input id="chkbx-'+flow.cid+'-'+4+'" type="checkbox" onclick="filterlistValToggle(\''+flow.cid+'\','+4+');"/> </td></tr>';
+  contentStr += '<tr><td>Include App</td><td>'+flow.tuple.Application+'</td><td> <input id="chkbx-'+flow.cid+'-'+6+'" type="checkbox" onclick="filterlistValToggle(\''+flow.cid+'\','+6+');"/> </td></tr>';
   
   //UIHandle.infoWindow.setContent('Add '+flow.tuple.DestIP+' to filter list?<br><input type="button" value="yes" onclick="filteripAppend(\''+flow.tuple.DestIP+'\');UIHandle.infoWindow.close()"/>');
   UIHandle.infoWindow.setContent(contentStr);
@@ -773,18 +773,73 @@ function hslToRgb(h, s, l){
 
 //Functions for filtering
 
-filterportexAppend = function(v){
+//Prepares an ID string to be processed by jquery
+function toJqID(id){
+  return '#' + id.replace( /(:|\.|\{|\})/g, '\\$1' );
+};
+
+filterlistValToggle = function(cid, filterID){
+  var checked = $(toJqID('chkbx-'+cid+'-'+filterID)).prop('checked');
+
+  switch(filterID){
+    case 1: //Exclude Port
+      if(checked == true){ //append
+        filterportExAppend( DataContainer.getByCid(cid).tuple.DestPort );
+      } else { //remove
+
+      }
+      break;
+    case 2: //Include Port
+      if(checked == true){ //append
+        filterportInAppend( DataContainer.getByCid(cid).tuple.DestPort );
+      } else { //remove
+
+      }
+      break;
+    case 3: //Exclude IP
+      if(checked == true){ //append
+        filteripExAppend( DataContainer.getByCid(cid).tuple.DestIP );
+      } else { //remove
+
+      }
+      break;
+    case 4: //Include IP
+      if(checked == true){ //append
+        filteripInAppend( DataContainer.getByCid(cid).tuple.DestIP );
+      } else { //remove
+
+      }
+      break;
+    case 5: //Exclude App
+      if(checked == true){ //append
+        filterappExAppend( DataContainer.getByCid(cid).tuple.Application );
+      } else { //remove
+
+      }
+      break;
+    case 6: //Include App
+      if(checked == true){ //append
+        filterappInAppend( DataContainer.getByCid(cid).tuple.Application );
+      } else { //remove
+
+      }
+      break;
+  }
+};
+
+filterportExAppend = function(v){
   $('#exclude-list').val( $('#exclude-list').val() +', '+ v );
 };
-filterportinAppend = function(v){
+filterportInAppend = function(v){
   $('#include-list').val( $('#include-list').val() +', '+ v );
 };
-filteripAppend = function(v){
+filteripInAppend = function(v){
   $('#filterip-list').val( $('#filterip-list').val() +', '+ v );
 };
-filterappAppend = function(v){
+filterappInAppend = function(v){
   $('#filterapp-list').val( $('#filterapp-list').val() +', '+ v );
 };
+
 /* ========== Controller ==========
  * Sends commands to Model to change it's state.
  */
