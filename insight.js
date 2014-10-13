@@ -97,22 +97,33 @@ DataContainer = {
 // Copies important metrics to prevTable for all flows in list
 populatePrevTable = function() {
   $.each(DataContainer.list, function(i, v){
-    //octets out
+    /* Sender -> Receiver */
+    //segments out
+    if(v.SegsOut != undefined){
+      DataContainer.setTableVal(v.cid, 'SegsOut', v.SegsOut);
+    }
+    //segments retransmitted
+    if(v.SegsRetrans != undefined){
+      DataContainer.setTableVal(v.cid, 'SegsRetrans', v.SegsRetrans);
+    }
+    //Number of octets of data in transmitted segments out
     if(v.DataOctetsOut != undefined){
       DataContainer.setTableVal(v.cid, 'DataOctetsOut', v.DataOctetsOut);
     }
-    //octets in
+
+    /* Receiver -> Sender */
+    //segments in
+    if(v.SegsIn != undefined){
+      DataContainer.setTableVal(v.cid, 'SegsIn', v.SegsIn);
+    }
+    //Number of data segments lost or reordered on the path
+    if(v.DupAckEpisodes != undefined){
+      DataContainer.setTableVal(v.cid, 'DupAckEpisodes', v.DupAckEpisodes);
+    }
+    //octets of data in transmitted segments in    
     if(v.DataOctetsIn != undefined){
       DataContainer.setTableVal(v.cid, 'DataOctetsIn', v.DataOctetsIn);
     }
-    //retransmits
-    if(v.SndLimTransRwin != undefined){
-      DataContainer.setTableVal(v.cid, 'SndLimTransRwin', v.SndLimTransRwin);
-    }
-    //duplicate acks
-    
-    //out of order packets
-
   });
 }
 
@@ -122,7 +133,7 @@ MsgType = {
   REPORT: 2
 };
 
-var mask = '125DE104,A00000,F98000,0,0,0';
+var mask = '125DE1D7,A00000,F98000,0,0,0';
 
 /* Location
  * Object holding a Latitude, Longitude ordered pair 
@@ -486,13 +497,27 @@ this.removeUIElem = function (flow){
 
 // Data to Graphics mapping functions
 this.mapPathColor = function (flow){
-  maxVal = 255; //max color value (black: good -> red: bad)
-  val = (flow.SndLimTransRwin + flow.DupAcksIn) / (flow.DataOctetsOut); //"badness" ratio: # errors to data out
-  if( flow.InRecovery == 2 ){ //tcpESDataUnordered(2) indicates that the remote receiver is reporting missing or out-of-order data
-    val *= 2;
+  var maxVal = 255; //max color value (black: good -> red: bad)
+  var loss = null; //Percent loss. Expected range: [0.0, 1.0]
+
+  //Determine which direction majority of data is flowing
+  if(flow.DataOctetsOut > flow.DataOctetsIn){ //outbound flow is larger
+    loss = flow.SegRetrans / flow.SegsOut;
   }
-  val = val*maxVal; //map "badness" value to color value range
-  hexVal = Math.floor(val).toString(16); //convert from decimal to hexVal
+  else{ //inbound flow is larger
+    loss = flow.DupAckEpisodes / flow.SegsIn;
+  }
+  
+  if(isNaN(loss)){ //if divisor was zero, set loss to zero (no data sent)
+    loss = 0;
+  }
+
+  flow.loss = loss; //store loss estimation 
+
+  //Map relevent loss range [0.0001, 0.1] to color range [0, 255]
+  var val = translateRange(log10(loss), -5, -1, 0, 255);
+
+  hexVal = val.toString(16); //convert from decimal to hexVal
   if(val < 16){ //if hex val only has 1 digit
     hexVal = '0'+hexVal; //pad with leading zero for #RRGGBB format
   }
@@ -500,19 +525,29 @@ this.mapPathColor = function (flow){
     hexVal = 'FF';
   }
   return '#'+hexVal+'0000';
-};
+}.bind(this);
 
 this.mapPathWidth = function (flow){
   var maxVal = 12; // max exponent in the scale (1*10^12) -> 1 Terabit/s
+  var val = null;
   var deltaIn = null;
   var deltaOut = null;
+ 
   if( DataContainer.getTableVal(flow.cid, 'DataOctetsOut') != undefined && flow.DataOctetsOut != undefined){ //estimate outbound throughput
     deltaOut = flow.DataOctetsOut - DataContainer.getTableVal(flow.cid, 'DataOctetsOut');
-  }if( DataContainer.getTableVal(flow.cid, 'DataOctetsIn') != undefined ){ //estimate inbound throughput
+  }
+  if( DataContainer.getTableVal(flow.cid, 'DataOctetsIn') != undefined ){ //estimate inbound throughput
     deltaIn = flow.DataOctetsIn - DataContainer.getTableVal(flow.cid, 'DataOctetsIn');
   }
-  
-  var val = (deltaOut+deltaIn)*8; // # of bits
+
+  //Determine which direction majority of data is flowing
+  if(flow.DataOctetsOut > flow.DataOctetsIn){ //outbound flow is larger
+    val = deltaOut; 
+  }
+  else{ //inbound flow is larger
+    val = deltaIn;
+  }
+  val = val * 8; // # of bits
   val = log10(val); // get base 10 exponent [val: 3 -> 1x10^3 -> 1 Kbps]
 
   // check if value is valid for display (is finite and not too small)
@@ -521,7 +556,7 @@ this.mapPathWidth = function (flow){
   }
 
   return val;
-};
+}.bind(this);
 
 this.mapSymColor = function (val){
   return '#FF0000';
@@ -538,6 +573,26 @@ this.mapSymDensity = function (flow){
   return val+'px';
 };
 
+//Translates val from the old range to the new range. If val falls outside of the old range, it will be set to the closest extreme (min or max)
+translateRange = function(val, oldMin, oldMax, newMin, newMax){
+  //Check for val out of range
+  if(val<oldMin){
+    val = oldMin;
+  }
+  else if(val>oldMax){
+    val = oldMax;
+  }
+
+  //Calculate span of each range
+  oldSpan = oldMax - oldMin;
+  newSpan = newMax - newMin;
+
+  //Convert old range to [0,1] range
+  scaledVal = ( val-oldMin )/oldSpan;
+
+  //Convert [0,1] range to new range
+  return newMin + ( scaledVal*newSpan )
+};
 
 this.report = function (){
   var command = '{"command":"report", "options":{"cid": ' +localStorage.cid + ', "persist": '+localStorage.persist+ ', "interval": '+localStorage.interval+', "uri":"' +localStorage.uri+ '", "port":' +localStorage.port+ ', "db":"' +localStorage.db+ '", "dbname":"' +localStorage.dbname+ '", "dbpass":"' +localStorage.dbpass+ '", "nocemail":"' +localStorage.nocemail+ '", "fname":"' +localStorage.fname+ '", "lname":"' +localStorage.lname+ '", "email":"' +localStorage.email+ '", "institution":"' +localStorage.institution+ '", "phone":"' +localStorage.phone+ '"}}';
@@ -564,6 +619,7 @@ this.writeFlowDetails = function (){
   // If a flow is selected
   if(this.selectedFlow != null){
     var contentStr = 'Application: ' + this.selectedFlow.tuple.Application;
+    contentStr += '<br>Estimated Loss: ' + this.selectedFlow.loss*100 +'%';
 
     // Iterate over each property of the Flow object.
     $.each(this.selectedFlow, function(key, val){
