@@ -211,7 +211,7 @@ this.update = function (now){
       }
 
       if( $('#filter-filterapp').prop('checked') === true ){
-        msg[commandCnt.toString()] = [{"command": "filterapp", "options": $('#filterapp-list').val()}];
+        msg[commandCnt.toString()] = [{"command": "appinclude", "options": $('#filterapp-list').val()}];
         commandCnt++;
       }
       msg[commandCnt.toString()] = [{"mask": mask.toString()}];
