@@ -207,6 +207,7 @@ this.update = function (now){
       }
       if( $('#filter-filterip').prop('checked') === true ){
         msg[commandCnt.toString()] = [{"command": "filterip", "options": $('#filterip-list').val()}];
+        console.log(msg[commandCnt.toString()]);
         commandCnt++;
       }
 
@@ -502,7 +503,7 @@ this.mapPathColor = function (flow){
 
   //Determine which direction majority of data is flowing
   if(flow.DataOctetsOut > flow.DataOctetsIn){ //outbound flow is larger
-    loss = flow.SegRetrans / flow.SegsOut;
+    loss = flow.SegsRetrans / flow.SegsOut;
   }
   else{ //inbound flow is larger
     loss = flow.DupAckEpisodes / flow.DataSegsIn;
@@ -517,7 +518,7 @@ this.mapPathColor = function (flow){
   //Map relevent loss range [0.0001, 0.01] to color range [0, 255]
   var val = translateRange(log10(loss), -5, -2, 0, 255);
 
-  hexVal = val.toString(16); //convert from decimal to hexVal
+  hexVal = parseInt(val).toString(16); //convert from decimal to hexVal
   if(val < 16){ //if hex val only has 1 digit
     hexVal = '0'+hexVal; //pad with leading zero for #RRGGBB format
   }
@@ -619,7 +620,7 @@ this.writeFlowDetails = function (){
   // If a flow is selected
   if(this.selectedFlow != null){
     var contentStr = 'Application: ' + this.selectedFlow.tuple.Application;
-    contentStr += '<br>Estimated Loss: ' + this.selectedFlow.loss*100 +'%';
+    contentStr += '<br>Estimated Loss: ' + (this.selectedFlow.loss*100).toPrecision(5) +'%';
 
     // Iterate over each property of the Flow object.
     $.each(this.selectedFlow, function(key, val){
