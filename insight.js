@@ -514,8 +514,8 @@ this.mapPathColor = function (flow){
 
   flow.loss = loss; //store loss estimation 
 
-  //Map relevent loss range [0.0001, 0.1] to color range [0, 255]
-  var val = translateRange(log10(loss), -5, -1, 0, 255);
+  //Map relevent loss range [0.0001, 0.01] to color range [0, 255]
+  var val = translateRange(log10(loss), -5, -2, 0, 255);
 
   hexVal = val.toString(16); //convert from decimal to hexVal
   if(val < 16){ //if hex val only has 1 digit
@@ -630,7 +630,7 @@ this.writeFlowDetails = function (){
           }
         });
       }
-      if( (typeof val === 'number' || typeof val === 'string') && (key != 'cid' && key != 'lat' && key != 'long') ){
+      if( (typeof val === 'number' || typeof val === 'string') && (key != 'cid' && key != 'lat' && key != 'long' && key != 'loss') ){
         contentStr += "<br>"+key+": "+val;
       }
     });
