@@ -505,7 +505,7 @@ this.mapPathColor = function (flow){
     loss = flow.SegRetrans / flow.SegsOut;
   }
   else{ //inbound flow is larger
-    loss = flow.DupAckEpisodes / flow.SegsIn;
+    loss = flow.DupAckEpisodes / flow.DataSegsIn;
   }
   
   if(isNaN(loss)){ //if divisor was zero, set loss to zero (no data sent)
