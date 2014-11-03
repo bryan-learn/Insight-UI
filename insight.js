@@ -170,7 +170,7 @@ this.Tuple = {
 
 this.Flow = {
   latLng: function(){
-    return new Location(this.lat, this.long);
+    return new Location(this.rem_lat, this.rem_long);
   },
   getID: function (){
     // Call tuple's getID function
@@ -650,7 +650,7 @@ this.writeFlowDetails = function (){
           }
         });
       }
-      if( (typeof val === 'number' || typeof val === 'string') && (key != 'cid' && key != 'lat' && key != 'long' && key != 'loss') ){
+      if( (typeof val === 'number' || typeof val === 'string') && (key != 'cid' && key != 'rem_lat' && key != 'rem_long' && key != 'loc_long' && key != 'loss') ){
         contentStr += "<br>"+key+": "+val;
       }
     });
