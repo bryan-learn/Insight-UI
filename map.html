@@ -18,6 +18,7 @@
     <input type="button" value="Clear" onclick="ctrl.view.clearContactInfo()">
   </div>
 
+
   <div id="container">
     <h1>Insight</h1>
     <div id="map-canvas"></div>
@@ -56,19 +57,30 @@
         </div>
       </div>
       <div class="info-header">
+        <a href="#" class=".close" onclick="toggleCollapse(this)">+</a><h2>Time Series Graph</h2>
+        <div id="tsg" class="info">
+          <canvas id="tsg-cvs" background-color="black"></canvas>
+        </div>
+      </div>
+      <div class="info-header">
         <a href="#" class=".close" onclick="toggleCollapse(this)">+</a><h2 id="con-title">Connection Details</h2>
         <div id="con-field" class="info" style="max-height: 200px; overflow-y: scroll"></div>
       </div>
+
     </div>
   </div>
 
   <div id="legend">
   </div>
+  <script type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script type="text/javascript" src="tsg.js"></script>
+  <script src="RGraph/libraries/RGraph.common.core.js"></script>
+  <script src="RGraph/libraries/RGraph.line.js"></script>             <!-- Just needed for Line charts -->
 
   <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.9&key=AIzaSyD2jW_4oXbWtCbXZ7L5wLdBoAtL6tAf8Fg&sensor=false"></script>
-  <script type="text/javascript" src="jquery-1.11.1.min.js"></script>
   <script type="text/javascript" src="curved.line-0.0.2.js"></script>
   <script type="text/javascript" src="insight.js"></script>
   <script type="text/javascript" src="noc-config.js"></script>
+
 </body>
 </html>

@@ -216,7 +216,6 @@ this.update = function (now){
         commandCnt++;
       }
       msg[commandCnt.toString()] = [{"mask": mask.toString()}];
-
       this.sendMessage(MsgType.DATA, JSON.stringify(msg));
     }
 
@@ -244,6 +243,7 @@ this.update = function (now){
  * Replaces old data set (DataContainer.list) with newFlows.
  */
 this.processNewData = function (newFlows){
+
   //Update prevTable before removing data
   populatePrevTable();
 
@@ -265,6 +265,13 @@ this.processNewData = function (newFlows){
     ctrl.view.createUIElem(DataContainer.list[i], ctrl.view.countDestIP(DataContainer.list[i].tuple.DestIP));
   }
 
+};
+
+this.updateGraph = function(){
+  if(ctrl.view.selectedFlow != null){
+    tsg_add_datapoint(ctrl.view.selectedFlow.CurCwnd, ctrl.view.selectedFlow.CurSsthresh);
+    tsg_draw();
+  }
 };
 
 this.jsonToFlows = function (inJSON){
@@ -308,6 +315,7 @@ this.getMessage = function (dataStr){
       case MsgType.DATA:
         // Convert data to a JSON object then apply data.
         this.processNewData(this.jsonToFlows(json));
+        this.updateGraph();
         break;
       case MsgType.REPORT:
         if(json.result == "success"){ // success - show report
@@ -330,6 +338,15 @@ this.sendMessage = function (type, arg){
       break;
   }
 }.bind(this);
+
+selectedFlowDeltas = function(){
+  var resultArray = new Array();
+  var cid = ctrl.view.selectedFlow.cid;
+  resultArray.push( ctrl.view.selectedFlow.DataOctetsOut - DataContainer.getTableVal(cid,'DataOctetsOut') );
+  resultArray.push( ctrl.view.selectedFlow.DataOctetsIn - DataContainer.getTableVal(cid,'DataOctetsIn') );
+
+  return resultArray;
+};
 
 }// end of Model
 
@@ -355,6 +372,8 @@ UIHandle = {
   infoWindow: new google.maps.InfoWindow({maxWidth: 800})
 
 };
+
+
 
 /* ========== View ==========
  * Requests information from the Model to generate output.
@@ -754,6 +773,15 @@ this.submitContactForm = function(){
   }
 }.bind(this);
 
+//Displays Graph pop-up div
+this.showGraph = function(){
+  htmlStr = ' <a href="#" class=".close" onclick="ctrl.view.showModal(false)">&#10006</a> ';
+  htmlStr += $('#tsg').html(); 
+  ctrl.view.setModalContent( htmlStr );
+  tsg_draw();
+  ctrl.view.showModal(true);
+}.bind(this);
+
 // Displays report in modal box
 this.showReport = function() {
   // Add exit button
@@ -952,6 +980,10 @@ if( localStorage.hasContactInfo != "true"){
 
 // Initialize websocket
 ctrl.websockInit();
+
+//Initialize Grapher
+
+tsg_init( $('#tsg-cvs').get(0) );
 
 // Request geolocation
 function request_location (){
