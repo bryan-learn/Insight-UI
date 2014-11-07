@@ -268,8 +268,10 @@ this.processNewData = function (newFlows){
 };
 
 this.updateGraph = function(){
+  var flow = ctrl.view.selectedFlow;
+  //var deltas = selectedFlowDeltas();
   if(ctrl.view.selectedFlow != null){
-    tsg_add_datapoint(ctrl.view.selectedFlow.CurCwnd, ctrl.view.selectedFlow.CurSsthresh);
+    tsg_addDatapoint( new Array(flow.DataOctetsOut, flow.DataOctetsIn, flow.SmoothedRTT, flow.CurCwnd) );
     tsg_draw();
   }
 };
@@ -341,10 +343,11 @@ this.sendMessage = function (type, arg){
 
 selectedFlowDeltas = function(){
   var resultArray = new Array();
-  var cid = ctrl.view.selectedFlow.cid;
-  resultArray.push( ctrl.view.selectedFlow.DataOctetsOut - DataContainer.getTableVal(cid,'DataOctetsOut') );
-  resultArray.push( ctrl.view.selectedFlow.DataOctetsIn - DataContainer.getTableVal(cid,'DataOctetsIn') );
-
+  if(ctrl.view.selectedFlow){
+    var cid = ctrl.view.selectedFlow.cid;
+    resultArray.push( ctrl.view.selectedFlow.DataOctetsOut - DataContainer.getTableVal(cid,'DataOctetsOut') );
+    resultArray.push( ctrl.view.selectedFlow.DataOctetsIn - DataContainer.getTableVal(cid,'DataOctetsIn') );
+  }
   return resultArray;
 };
 
@@ -411,6 +414,12 @@ packetSym = {
 
 /* Event handlers */
 this.pathClickEvent = function (e, flow, loc){
+
+  if(this.selectedFlow){
+    if(flow.cid != this.selectedFlow.cid){
+      tsg_clearData(); //clear graph data when switching flows
+    }
+  }
 
   this.selectedFlow = flow;
 
@@ -773,15 +782,6 @@ this.submitContactForm = function(){
   }
 }.bind(this);
 
-//Displays Graph pop-up div
-this.showGraph = function(){
-  htmlStr = ' <a href="#" class=".close" onclick="ctrl.view.showModal(false)">&#10006</a> ';
-  htmlStr += $('#tsg').html(); 
-  ctrl.view.setModalContent( htmlStr );
-  tsg_draw();
-  ctrl.view.showModal(true);
-}.bind(this);
-
 // Displays report in modal box
 this.showReport = function() {
   // Add exit button
@@ -982,8 +982,8 @@ if( localStorage.hasContactInfo != "true"){
 ctrl.websockInit();
 
 //Initialize Grapher
-
-tsg_init( $('#tsg-cvs').get(0) );
+tsg_init('tsg-cvs', 4, ['green', 'blue', 'red', 'yellow']); //Prepare graph that can plot up to 4 lines
+tsg_setSeriesTitles(['Bytes Out', 'Bytes In', 'RTT', 'Cwnd']);
 
 // Request geolocation
 function request_location (){
