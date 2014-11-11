@@ -35,18 +35,23 @@ h2 {
   width: 60%; 
   border: 2px solid; 
   border-radius: 25px;
+  border-right-style: dashed;
   position: relative;
-  margin: 5px
+  margin: 5px;
+  overflow-x: auto;
+  resize: horizontal;
 }
 #info-canvas { 
-  float: left;
+  top: 0;
+  right: 0;
   height: 90%;
-  width: 35%;
+  width: auto;
   border-radius: 10px;
   margin: 5px;
   background-color: #CCDDFF;
   position: relative;
-  /*text-align: center*/
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .info-header {
   position: relative;
@@ -62,6 +67,7 @@ h2 {
   margin: 5px;
   padding: 2px;
   display: block;
+  text-align: center;
 }
 #legend {
   padding:3px;

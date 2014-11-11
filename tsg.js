@@ -82,6 +82,10 @@ var tsg_init = function(canvasID, numLines, colors){
         tsg_createYAxis(canvasID, tsg_graphs[i], (numLines*75) - (numLines-i-1)*75);
     }
 
+    tsg_yaxes[0].set('units.post', ' bps');
+    tsg_yaxes[1].set('units.post', ' bps');
+    tsg_yaxes[2].set('units.post', ' ms');
+    tsg_yaxes[3].set('units.post', ' B');
 };
 
 var tsg_createGraph = function(_id, _colors, _data, leftOffset){
@@ -112,7 +116,7 @@ var tsg_createGraph = function(_id, _colors, _data, leftOffset){
     });
 
   tsg_graphs.push(lineGraph);
-}
+};
 
 var tsg_createOverlayGraph = function(_id, _colors, _data, leftOffset){
     var lineGraph = new RGraph.Line({    //RGraph lib line object
@@ -158,9 +162,11 @@ var tsg_createYAxis = function(_id, _graph, leftOffset){
 
 var axisFormatter = function(obj, num){
     num = num.toString();
-    if(num.length > 4){
+    if(num.length > 5){
         num = parseInt(num).toExponential(1);
     }
+
+    num += obj.get('units.post');
 
     return num;
 };

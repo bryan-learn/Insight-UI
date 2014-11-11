@@ -207,7 +207,7 @@ this.update = function (now){
       }
       if( $('#filter-filterip').prop('checked') === true ){
         msg[commandCnt.toString()] = [{"command": "filterip", "options": $('#filterip-list').val()}];
-        console.log(msg[commandCnt.toString()]);
+        //console.log(msg[commandCnt.toString()]);
         commandCnt++;
       }
 
@@ -230,6 +230,11 @@ this.update = function (now){
 
     // Update Contact Info panel
     ctrl.view.refreshContactInfo();
+
+    // Update Graph
+    if(ctrl.view.selectedFlow != null){
+      this.updateGraph( ctrl.view.selectedFlow, flowDeltas(ctrl.view.selectedFlow) );
+    }
 
     //Debug function
     if(debug == true){
@@ -267,11 +272,9 @@ this.processNewData = function (newFlows){
 
 };
 
-this.updateGraph = function(){
-  var flow = ctrl.view.selectedFlow;
-  //var deltas = selectedFlowDeltas();
-  if(ctrl.view.selectedFlow != null){
-    tsg_addDatapoint( new Array(flow.DataOctetsOut, flow.DataOctetsIn, flow.SmoothedRTT, flow.CurCwnd) );
+this.updateGraph = function(flow, deltas){
+  if(flow){
+    tsg_addDatapoint( new Array(deltas[0], deltas[1], flow.SmoothedRTT, flow.CurCwnd) );
     tsg_draw();
   }
 };
@@ -317,7 +320,7 @@ this.getMessage = function (dataStr){
       case MsgType.DATA:
         // Convert data to a JSON object then apply data.
         this.processNewData(this.jsonToFlows(json));
-        this.updateGraph();
+        //this.updateGraph( ctrl.view.selectedFlow, flowDeltas(ctrl.view.selectedFlow) );
         break;
       case MsgType.REPORT:
         if(json.result == "success"){ // success - show report
@@ -341,13 +344,11 @@ this.sendMessage = function (type, arg){
   }
 }.bind(this);
 
-selectedFlowDeltas = function(){
+flowDeltas = function(flow){
   var resultArray = new Array();
-  if(ctrl.view.selectedFlow){
-    var cid = ctrl.view.selectedFlow.cid;
-    resultArray.push( ctrl.view.selectedFlow.DataOctetsOut - DataContainer.getTableVal(cid,'DataOctetsOut') );
-    resultArray.push( ctrl.view.selectedFlow.DataOctetsIn - DataContainer.getTableVal(cid,'DataOctetsIn') );
-  }
+  
+  resultArray.push( flow.DataOctetsOut - DataContainer.getTableVal(flow.cid,'DataOctetsOut') );
+  resultArray.push( flow.DataOctetsIn - DataContainer.getTableVal(flow.cid,'DataOctetsIn') );
   return resultArray;
 };
 
@@ -447,8 +448,6 @@ this.nodeClickEvent = function (e, loc, ip){
   UIHandle.infoWindow.setContent('Add '+ip+' to filter list?<br><input type="button" value="yes" onclick="filteripAppend(\''+ip+'\');UIHandle.infoWindow.close()"/>');
   UIHandle.infoWindow.setPosition(loc);
   UIHandle.infoWindow.open(UIHandle.map);
-//  console.log(loc);
-  console.log(ip);
 }.bind(this);
 
 /* Map initialization function */
@@ -583,7 +582,6 @@ this.mapPathWidth = function (flow){
   if( !isFinite(val) || val < 2){
     val = 2; //lines thiner than 2px are too hard to see
   }
-
   return val;
 }.bind(this);
 
@@ -626,7 +624,7 @@ translateRange = function(val, oldMin, oldMax, newMin, newMax){
 this.report = function (){
   var command = '{"command":"report", "options":{"cid": ' +localStorage.cid + ', "persist": '+localStorage.persist+ ', "interval": '+localStorage.interval+', "uri":"' +localStorage.uri+ '", "port":' +localStorage.port+ ', "db":"' +localStorage.db+ '", "dbname":"' +localStorage.dbname+ '", "dbpass":"' +localStorage.dbpass+ '", "nocemail":"' +localStorage.nocemail+ '", "fname":"' +localStorage.fname+ '", "lname":"' +localStorage.lname+ '", "email":"' +localStorage.email+ '", "institution":"' +localStorage.institution+ '", "phone":"' +localStorage.phone+ '"}}';
   ctrl.model.sendMessage(MsgType.REPORT, command);
-  console.log("Report JSON: "+ command);
+  //console.log("Report JSON: "+ command);
 
 }.bind(this);
 
@@ -941,7 +939,8 @@ this.model = new Model();
 this.view = new View();
 
 // Add map to page
-google.maps.event.addDomListener(window, 'load', this.view.mapInit);
+//google.maps.event.addDomListener(window, 'load', this.view.mapInit);
+this.view.mapInit();
 
 /* Update Loop Functions */
 
@@ -968,22 +967,31 @@ this.websockInit = function (){
 
 }// end Controller
 
+var ctrl;
 
-/* Instantiate MVC */
-var ctrl = new Controller();
-
-// If no contact info found, ask user for info
-if( localStorage.hasContactInfo != "true"){
-  ctrl.view.setModalContent( $('#contact-info-form').html() );
-  ctrl.view.showModal(true);
-}
-
-// Initialize websocket
-ctrl.websockInit();
-
-//Initialize Grapher
-tsg_init('tsg-cvs', 4, ['green', 'blue', 'red', 'yellow']); //Prepare graph that can plot up to 4 lines
-tsg_setSeriesTitles(['Bytes Out', 'Bytes In', 'RTT', 'Cwnd']);
+//Initialization after DOM load
+var init = function(){
+console.log('init');
+  // Instantiate MVC
+  ctrl= new Controller();
+   
+  // Initialize websocket
+  ctrl.websockInit();
+  
+  //Initialize Grapher
+  tsg_init('tsg-cvs', 4, ['green', 'blue', 'red', 'yellow']); //Prepare graph that can plot up to 4 lines
+  tsg_setSeriesTitles(['BW Out', 'BW In', 'RTT', 'Cwnd']);
+  
+  $('#map-canvas').resizable({containment: "parent"});
+  $('#map-canvas').resizeable("option", "minWidth", 150);
+  $('#map-canvas').resizeable("option", "minHeight", $('#map-canvas').height() );
+ 
+  // If no contact info found, ask user for info
+  if( localStorage.hasContactInfo != "true"){
+    ctrl.view.setModalContent( $('#contact-info-form').html() );
+    ctrl.view.showModal(true);
+  }
+};
 
 // Request geolocation
 function request_location (){
@@ -1004,3 +1012,5 @@ function request_location (){
       }
     });
 }
+
+window.addEventListener("load", init, false);
