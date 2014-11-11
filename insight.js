@@ -461,7 +461,7 @@ this.mapInit = function () {
   // Setup map
   var mapOptions = {
     center: UIHandle.host,
-    zoom: 3
+    zoom: 5 
   };
   UIHandle.map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 
