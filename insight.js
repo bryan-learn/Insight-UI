@@ -172,6 +172,9 @@ this.Flow = {
   latLng: function(){
     return new Location(this.rem_lat, this.rem_long);
   },
+  loc_LatLng: function(){
+    return new Location(this.loc_lat, this.loc_long);
+  },
   getID: function (){
     // Call tuple's getID function
     return this.tuple.getID();
@@ -455,7 +458,8 @@ this.mapInit = function () {
   if(UIHandle.host == undefined || UIHandle.host == null){ //if host is not yet set
     request_location();
     if(UIHandle.host == undefined || UIHandle.host == null){ //if request_location failed (no browser support for navigator)
-      UIHandle.host = new google.maps.LatLng(40.4439, -79.9561); //defaut center before data is received
+      //UIHandle.host = new google.maps.LatLng(40.4439, -79.9561); //defaut center before data is received
+      UIHandle.host = new google.maps.LatLng(29.9424, -90.0634); //defaut center before data is received
     }
   }
   // Setup map
@@ -480,8 +484,17 @@ this.mapInit = function () {
 this.createUIElem = function (flow, multi){
   // Create marker at flow endpoint
   var endpoint = this.locToGLatLng(flow.latLng());
-  UIHandle.markers[flow.getID()] = new google.maps.Marker({
+  UIHandle.markers[flow.getID()+'rem'] = new google.maps.Marker({
     position: endpoint,
+        icon: nodeSym,
+        map: UIHandle.map,
+    zIndex: 1
+  });
+
+  //var host = this.locToGLatLng(flow.loc_LatLng());
+  var host = UIHandle.host
+  UIHandle.markers[flow.getID()+'loc'] = new google.maps.Marker({
+    position: host,
         icon: nodeSym,
         map: UIHandle.map,
     zIndex: 1
@@ -489,7 +502,7 @@ this.createUIElem = function (flow, multi){
 
   // Create path connection host and flow endpoint
   UIHandle.paths[flow.getID()] = curved_line_generate({
-    path: [UIHandle.host, endpoint],
+    path: [host, endpoint],
     strokeOpacity: '0.9',
     //icons: [{icon: packetSym, offset: '0', repeat: this.mapSymDensity( flow )}],
     strokeColor: this.mapPathColor( flow ),
@@ -505,7 +518,7 @@ this.createUIElem = function (flow, multi){
   }.bind(this));
 
   // Add event listener to destination marker 
-  google.maps.event.addListener(UIHandle.markers[flow.getID()], 'click', function(event){
+  google.maps.event.addListener(UIHandle.markers[flow.getID()+'rem'], 'click', function(event){
     //this.nodeClickEvent(event, endpoint, flow.tuple.DestIP);
   }.bind(this));
 
@@ -516,8 +529,10 @@ this.createUIElem = function (flow, multi){
 /* Removes new UI elements for the Flow passed in. */
 this.removeUIElem = function (flow){
 
-  UIHandle.markers[flow.getID()].setMap(null); // remove from map
-  delete UIHandle.markers[flow.getID()]; // remove marker
+  UIHandle.markers[flow.getID()+'rem'].setMap(null); // remove from map
+  UIHandle.markers[flow.getID()+'loc'].setMap(null); // remove from map
+  delete UIHandle.markers[flow.getID()+'rem']; // remove remote marker
+  delete UIHandle.markers[flow.getID()+'loc']; // remove local marker
 
   UIHandle.paths[flow.getID()].setMap(null); // remove from map
   delete UIHandle.paths[flow.getID()]; // remove path
@@ -983,8 +998,8 @@ console.log('init');
   tsg_setSeriesTitles(['BW Out', 'BW In', 'RTT', 'Cwnd']);
   
   $('#map-canvas').resizable({containment: "parent"});
-  $('#map-canvas').resizeable("option", "minWidth", 150);
-  $('#map-canvas').resizeable("option", "minHeight", $('#map-canvas').height() );
+  $('#map-canvas').resizable("option", "minWidth", 150);
+  $('#map-canvas').resizable("option", "minHeight", $('#map-canvas').height() );
  
   // If no contact info found, ask user for info
   if( localStorage.hasContactInfo != "true"){
@@ -1001,7 +1016,8 @@ function request_location (){
     },
     function(err){ //error callback
       console.log('location request failed - setting to default location'); //TODO replace with better fall-back
-      UIHandle.host = new google.maps.LatLng(40.4439, -79.9561); //defaut center (pgh)
+      //UIHandle.host = new google.maps.LatLng(40.4439, -79.9561); //defaut center (pgh)
+      UIHandle.host = new google.maps.LatLng(29.9424, -90.0634); //defaut center before data is received
       
       if(err.code == 1){
         console.log('Error: permission denied');
