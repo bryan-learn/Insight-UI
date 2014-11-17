@@ -456,7 +456,7 @@ this.nodeClickEvent = function (e, loc, ip){
 /* Map initialization function */
 this.mapInit = function () {
   if(UIHandle.host == undefined || UIHandle.host == null){ //if host is not yet set
-    request_location();
+    //request_location();
     if(UIHandle.host == undefined || UIHandle.host == null){ //if request_location failed (no browser support for navigator)
       //UIHandle.host = new google.maps.LatLng(40.4439, -79.9561); //defaut center before data is received
       UIHandle.host = new google.maps.LatLng(29.9424, -90.0634); //defaut center before data is received
